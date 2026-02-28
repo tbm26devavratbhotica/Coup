@@ -25,10 +25,6 @@ export const metadata: Metadata = {
     description: 'Play Coup with friends online — bluff, challenge, and steal your way to victory in this multiplayer card game.',
     images: ['/og-image.png'],
   },
-  icons: {
-    icon: '/coup-logo.png',
-    apple: '/coup-logo.png',
-  },
 };
 
 export default function RootLayout({
