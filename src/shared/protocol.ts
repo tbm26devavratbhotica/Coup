@@ -1,4 +1,4 @@
-import { ActionType, AiPersonality, Character, ChatMessage, ClientGameState, RoomPlayer } from './types';
+import { ActionType, AiPersonality, ChallengeRevealEvent, Character, ChatMessage, ClientGameState, RoomPlayer, RoomSettings } from './types';
 
 // ─── Client → Server Events ───
 export interface ClientToServerEvents {
@@ -28,19 +28,23 @@ export interface ClientToServerEvents {
   'bot:add': (data: { name: string; personality: AiPersonality }, callback: (response: { success: boolean; botId?: string; error?: string }) => void) => void;
   'bot:remove': (data: { botId: string }, callback: (response: { success: boolean; error?: string }) => void) => void;
 
+  // Room settings
+  'room:update_settings': (data: { settings: RoomSettings }, callback: (response: { success: boolean; error?: string }) => void) => void;
+
   // Reconnection
   'room:rejoin': (data: { roomCode: string; playerId: string }, callback: (response: RoomResponse) => void) => void;
 }
 
 // ─── Server → Client Events ───
 export interface ServerToClientEvents {
-  'room:updated': (data: { players: RoomPlayer[]; hostId: string }) => void;
+  'room:updated': (data: { players: RoomPlayer[]; hostId: string; settings: RoomSettings }) => void;
   'room:error': (data: { message: string }) => void;
   'game:state': (state: ClientGameState) => void;
   'game:error': (data: { message: string }) => void;
   'game:log': (data: { message: string }) => void;
   'chat:message': (data: ChatMessage) => void;
   'chat:history': (data: { messages: ChatMessage[] }) => void;
+  'game:challenge_reveal': (data: ChallengeRevealEvent) => void;
   'game:rematch_to_lobby': () => void;
 }
 

@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { AiPersonality, ChatMessage, Room, RoomPlayer } from '../shared/types';
-import { CHAT_MAX_HISTORY, CHAT_MAX_MESSAGE_LENGTH, CHAT_RATE_LIMIT_MS, MAX_PLAYERS, MIN_PLAYERS } from '../shared/constants';
+import { AiPersonality, ChatMessage, Room, RoomPlayer, RoomSettings } from '../shared/types';
+import { CHAT_MAX_HISTORY, CHAT_MAX_MESSAGE_LENGTH, CHAT_RATE_LIMIT_MS, DEFAULT_ROOM_SETTINGS, MAX_ACTION_TIMER, MAX_PLAYERS, MIN_ACTION_TIMER, MIN_PLAYERS } from '../shared/constants';
 import { GameEngine } from '../engine/GameEngine';
 import { BotController } from './BotController';
 
@@ -48,6 +48,7 @@ export class RoomManager {
       ],
       gameState: null,
       createdAt: Date.now(),
+      settings: { ...DEFAULT_ROOM_SETTINGS },
     };
 
     this.rooms.set(code, room);
@@ -185,6 +186,20 @@ export class RoomManager {
     return room;
   }
 
+  updateSettings(roomCode: string, settings: RoomSettings): { success: boolean } | { error: string } {
+    const room = this.rooms.get(roomCode.toUpperCase());
+    if (!room) return { error: 'Room not found' };
+    if (room.gameState) return { error: 'Cannot change settings during a game' };
+
+    const timer = Math.round(settings.actionTimerSeconds);
+    if (timer < MIN_ACTION_TIMER || timer > MAX_ACTION_TIMER) {
+      return { error: `Timer must be between ${MIN_ACTION_TIMER} and ${MAX_ACTION_TIMER} seconds` };
+    }
+
+    room.settings = { actionTimerSeconds: timer };
+    return { success: true };
+  }
+
   getRoom(code: string): Room | undefined {
     return this.rooms.get(code.toUpperCase());
   }
@@ -199,7 +214,8 @@ export class RoomManager {
     if (room.players.length < MIN_PLAYERS) return { error: `Need at least ${MIN_PLAYERS} players` };
     if (room.gameState) return { error: 'Game already in progress' };
 
-    const engine = new GameEngine(roomCode);
+    const timerMs = room.settings.actionTimerSeconds * 1000;
+    const engine = new GameEngine(roomCode, timerMs);
     engine.startGame(room.players.map(p => ({ id: p.id, name: p.name })));
 
     this.engines.set(roomCode, engine);

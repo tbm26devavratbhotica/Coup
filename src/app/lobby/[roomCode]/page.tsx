@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useSocket } from '../../hooks/useSocket';
 import { useGameStore } from '../../stores/gameStore';
-import { MIN_PLAYERS, MAX_PLAYERS } from '@/shared/constants';
+import { MIN_PLAYERS, MAX_PLAYERS, MIN_ACTION_TIMER, MAX_ACTION_TIMER } from '@/shared/constants';
 import { GameStatus } from '@/shared/types';
 import { ChatPanel } from '../../components/chat/ChatPanel';
 import { AddBotModal } from '../../components/lobby/AddBotModal';
@@ -13,11 +13,12 @@ export default function LobbyPage() {
   const router = useRouter();
   const params = useParams();
   const roomCode = params.roomCode as string;
-  const { startGame, leaveRoom, sendChat, addBot, removeBot } = useSocket();
+  const { startGame, leaveRoom, sendChat, addBot, removeBot, updateRoomSettings } = useSocket();
   const {
     playerId,
     hostId,
     roomPlayers,
+    roomSettings,
     chatMessages,
     gameState,
     error,
@@ -132,6 +133,41 @@ export default function LobbyPage() {
             </button>
           )}
         </div>
+
+        {/* Room Settings */}
+        {roomSettings && (
+          <div className="card-container mb-6">
+            <h2 className="font-bold text-gray-400 text-sm uppercase mb-3">Room Settings</h2>
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-gray-300">Action Timer</label>
+              <span className="text-sm font-mono text-coup-accent">{roomSettings.actionTimerSeconds}s</span>
+            </div>
+            {isHost ? (
+              <input
+                type="range"
+                min={MIN_ACTION_TIMER}
+                max={MAX_ACTION_TIMER}
+                step={5}
+                value={roomSettings.actionTimerSeconds}
+                onChange={(e) => {
+                  updateRoomSettings({ actionTimerSeconds: Number(e.target.value) });
+                }}
+                className="w-full mt-2 accent-coup-accent"
+              />
+            ) : (
+              <div className="w-full bg-coup-bg rounded-full h-2 mt-2">
+                <div
+                  className="bg-coup-accent/40 h-2 rounded-full"
+                  style={{ width: `${((roomSettings.actionTimerSeconds - MIN_ACTION_TIMER) / (MAX_ACTION_TIMER - MIN_ACTION_TIMER)) * 100}%` }}
+                />
+              </div>
+            )}
+            <div className="flex justify-between text-xs text-gray-600 mt-1">
+              <span>{MIN_ACTION_TIMER}s</span>
+              <span>{MAX_ACTION_TIMER}s</span>
+            </div>
+          </div>
+        )}
 
         {/* Controls */}
         <div className="space-y-3">

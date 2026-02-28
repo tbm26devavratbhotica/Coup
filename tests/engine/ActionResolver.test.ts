@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ActionResolver, ResolverResult } from '@/engine/ActionResolver';
+import { ActionResolver, ResolverResult, SideEffect } from '@/engine/ActionResolver';
 import { Game } from '@/engine/Game';
 import { Character, ActionType, TurnPhase } from '@/shared/types';
 import {
+  CHALLENGE_TIMER_MS,
   FORCED_COUP_THRESHOLD,
   STARTING_COINS,
 } from '@/shared/constants';
@@ -887,6 +888,225 @@ describe('ActionResolver', () => {
 
       const result = resolver.chooseExchange(game, 'p2', [0, 1], exchangeState, pendingAction);
       expect(isError(result)).toBe(true);
+    });
+  });
+
+  // ──────────────────────────────────────────────────
+  // Custom timerMs
+  // ──────────────────────────────────────────────────
+
+  describe('Custom timerMs', () => {
+    it('defaults to CHALLENGE_TIMER_MS when no timerMs provided', () => {
+      const defaultResolver = new ActionResolver();
+      const result = defaultResolver.declareAction(game, 'p1', ActionType.Tax);
+      expect(isError(result)).toBe(false);
+      if (isError(result)) return;
+
+      const timerEffect = result.sideEffects.find(e => e.type === 'set_timer');
+      expect(timerEffect).toBeDefined();
+      expect(timerEffect!.type === 'set_timer' && timerEffect!.durationMs).toBe(CHALLENGE_TIMER_MS);
+    });
+
+    it('uses custom timerMs for action challenge phase', () => {
+      const customResolver = new ActionResolver(30_000);
+      const result = customResolver.declareAction(game, 'p1', ActionType.Tax);
+      expect(isError(result)).toBe(false);
+      if (isError(result)) return;
+
+      const timerEffect = result.sideEffects.find(e => e.type === 'set_timer');
+      expect(timerEffect).toBeDefined();
+      expect(timerEffect!.type === 'set_timer' && timerEffect!.durationMs).toBe(30_000);
+    });
+
+    it('uses custom timerMs for block phase (Foreign Aid)', () => {
+      const customResolver = new ActionResolver(45_000);
+      const result = customResolver.declareAction(game, 'p1', ActionType.ForeignAid);
+      expect(isError(result)).toBe(false);
+      if (isError(result)) return;
+
+      const timerEffect = result.sideEffects.find(e => e.type === 'set_timer');
+      expect(timerEffect).toBeDefined();
+      expect(timerEffect!.type === 'set_timer' && timerEffect!.durationMs).toBe(45_000);
+    });
+
+    it('uses custom timerMs for block challenge phase', () => {
+      const customResolver = new ActionResolver(20_000);
+      const declareResult = customResolver.declareAction(game, 'p1', ActionType.ForeignAid);
+      if (isError(declareResult)) return;
+
+      game.turnPhase = TurnPhase.AwaitingBlock;
+      const blockResult = customResolver.block(game, 'p2', Character.Duke, declareResult.pendingAction!);
+      expect(isError(blockResult)).toBe(false);
+      if (isError(blockResult)) return;
+
+      const timerEffect = blockResult.sideEffects.find(e => e.type === 'set_timer');
+      expect(timerEffect).toBeDefined();
+      expect(timerEffect!.type === 'set_timer' && timerEffect!.durationMs).toBe(20_000);
+    });
+
+    it('uses custom timerMs for block phase after challenge defense (Steal)', () => {
+      const customResolver = new ActionResolver(25_000);
+      setCards(game, 'p1', [Character.Captain, Character.Contessa]);
+      game.getPlayer('p2')!.coins = 4;
+
+      const declareResult = customResolver.declareAction(game, 'p1', ActionType.Steal, 'p2');
+      if (isError(declareResult)) return;
+
+      // p3 challenges, p1 has Captain → challenge fails → moves to block phase
+      const challengeResult = customResolver.challenge(
+        game, 'p3', declareResult.pendingAction!, declareResult.challengeState!,
+      );
+      expect(isError(challengeResult)).toBe(false);
+      if (isError(challengeResult)) return;
+
+      // p3 had 2 influences so needs to choose, but the block timer is set after the influence loss
+      // Let's check that the timer effects have the custom duration
+      const allTimerEffects = challengeResult.sideEffects.filter(
+        (e): e is SideEffect & { type: 'set_timer' } => e.type === 'set_timer',
+      );
+      for (const te of allTimerEffects) {
+        expect(te.durationMs).toBe(25_000);
+      }
+    });
+
+    it('uses custom timerMs for block phase after allPassedChallenge (Steal)', () => {
+      const customResolver = new ActionResolver(10_000);
+      game.getPlayer('p2')!.coins = 4;
+
+      const declareResult = customResolver.declareAction(game, 'p1', ActionType.Steal, 'p2');
+      if (isError(declareResult)) return;
+
+      const passResult = customResolver.allPassedChallenge(game, declareResult.pendingAction!);
+      expect(passResult.newPhase).toBe(TurnPhase.AwaitingBlock);
+
+      const timerEffect = passResult.sideEffects.find(e => e.type === 'set_timer');
+      expect(timerEffect).toBeDefined();
+      expect(timerEffect!.type === 'set_timer' && timerEffect!.durationMs).toBe(10_000);
+    });
+  });
+
+  // ──────────────────────────────────────────────────
+  // challenge_reveal side effects
+  // ──────────────────────────────────────────────────
+
+  describe('challenge_reveal side effects', () => {
+    it('emits challenge_reveal with wasGenuine=true when action challenge fails', () => {
+      setCards(game, 'p1', [Character.Duke, Character.Contessa]);
+
+      const declareResult = resolver.declareAction(game, 'p1', ActionType.Tax);
+      if (isError(declareResult)) return;
+
+      const result = resolver.challenge(
+        game, 'p2', declareResult.pendingAction!, declareResult.challengeState!,
+      );
+      expect(isError(result)).toBe(false);
+      if (isError(result)) return;
+
+      const reveal = result.sideEffects.find(e => e.type === 'challenge_reveal');
+      expect(reveal).toBeDefined();
+      if (reveal && reveal.type === 'challenge_reveal') {
+        expect(reveal.challengerName).toBe('Bob');
+        expect(reveal.challengedName).toBe('Alice');
+        expect(reveal.character).toBe(Character.Duke);
+        expect(reveal.wasGenuine).toBe(true);
+      }
+    });
+
+    it('emits challenge_reveal with wasGenuine=false when action challenge succeeds', () => {
+      setCards(game, 'p1', [Character.Captain, Character.Contessa]); // no Duke
+
+      const declareResult = resolver.declareAction(game, 'p1', ActionType.Tax);
+      if (isError(declareResult)) return;
+
+      const result = resolver.challenge(
+        game, 'p2', declareResult.pendingAction!, declareResult.challengeState!,
+      );
+      expect(isError(result)).toBe(false);
+      if (isError(result)) return;
+
+      const reveal = result.sideEffects.find(e => e.type === 'challenge_reveal');
+      expect(reveal).toBeDefined();
+      if (reveal && reveal.type === 'challenge_reveal') {
+        expect(reveal.challengerName).toBe('Bob');
+        expect(reveal.challengedName).toBe('Alice');
+        expect(reveal.character).toBe(Character.Duke);
+        expect(reveal.wasGenuine).toBe(false);
+      }
+    });
+
+    it('emits challenge_reveal with wasGenuine=true when block challenge fails (blocker has card)', () => {
+      setCards(game, 'p2', [Character.Duke, Character.Assassin]);
+
+      const declareResult = resolver.declareAction(game, 'p1', ActionType.ForeignAid);
+      if (isError(declareResult)) return;
+
+      game.turnPhase = TurnPhase.AwaitingBlock;
+      const blockResult = resolver.block(game, 'p2', Character.Duke, declareResult.pendingAction!);
+      if (isError(blockResult)) return;
+
+      game.turnPhase = TurnPhase.AwaitingBlockChallenge;
+      const result = resolver.challengeBlock(
+        game, 'p1', declareResult.pendingAction!, blockResult.pendingBlock!, blockResult.challengeState!,
+      );
+      expect(isError(result)).toBe(false);
+      if (isError(result)) return;
+
+      const reveal = result.sideEffects.find(e => e.type === 'challenge_reveal');
+      expect(reveal).toBeDefined();
+      if (reveal && reveal.type === 'challenge_reveal') {
+        expect(reveal.challengerName).toBe('Alice');
+        expect(reveal.challengedName).toBe('Bob');
+        expect(reveal.character).toBe(Character.Duke);
+        expect(reveal.wasGenuine).toBe(true);
+      }
+    });
+
+    it('emits challenge_reveal with wasGenuine=false when block challenge succeeds (blocker lied)', () => {
+      setCards(game, 'p2', [Character.Captain, Character.Assassin]); // no Duke
+
+      const declareResult = resolver.declareAction(game, 'p1', ActionType.ForeignAid);
+      if (isError(declareResult)) return;
+
+      game.turnPhase = TurnPhase.AwaitingBlock;
+      const blockResult = resolver.block(game, 'p2', Character.Duke, declareResult.pendingAction!);
+      if (isError(blockResult)) return;
+
+      game.turnPhase = TurnPhase.AwaitingBlockChallenge;
+      const result = resolver.challengeBlock(
+        game, 'p1', declareResult.pendingAction!, blockResult.pendingBlock!, blockResult.challengeState!,
+      );
+      expect(isError(result)).toBe(false);
+      if (isError(result)) return;
+
+      const reveal = result.sideEffects.find(e => e.type === 'challenge_reveal');
+      expect(reveal).toBeDefined();
+      if (reveal && reveal.type === 'challenge_reveal') {
+        expect(reveal.challengerName).toBe('Alice');
+        expect(reveal.challengedName).toBe('Bob');
+        expect(reveal.character).toBe(Character.Duke);
+        expect(reveal.wasGenuine).toBe(false);
+      }
+    });
+
+    it('challenge_reveal is emitted before log effects', () => {
+      setCards(game, 'p1', [Character.Duke, Character.Contessa]);
+
+      const declareResult = resolver.declareAction(game, 'p1', ActionType.Tax);
+      if (isError(declareResult)) return;
+
+      const result = resolver.challenge(
+        game, 'p2', declareResult.pendingAction!, declareResult.challengeState!,
+      );
+      if (isError(result)) return;
+
+      // challenge_reveal should come before the log about the reveal result
+      const revealIdx = result.sideEffects.findIndex(e => e.type === 'challenge_reveal');
+      const logIdx = result.sideEffects.findIndex(
+        e => e.type === 'log' && (e as any).message.includes('reveals'),
+      );
+      expect(revealIdx).toBeGreaterThanOrEqual(0);
+      expect(logIdx).toBeGreaterThanOrEqual(0);
+      expect(revealIdx).toBeLessThan(logIdx);
     });
   });
 });

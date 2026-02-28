@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { ChatMessage, ClientGameState, RoomPlayer } from '@/shared/types';
+import { ChallengeRevealEvent, ChatMessage, ClientGameState, RoomPlayer, RoomSettings } from '@/shared/types';
 
 interface GameStore {
   // Connection state
@@ -13,8 +13,9 @@ interface GameStore {
   playerId: string | null;
   hostId: string | null;
   roomPlayers: RoomPlayer[];
+  roomSettings: RoomSettings | null;
   setRoom: (roomCode: string, playerId: string) => void;
-  setRoomPlayers: (players: RoomPlayer[], hostId: string) => void;
+  setRoomPlayers: (players: RoomPlayer[], hostId: string, settings: RoomSettings) => void;
   clearRoom: () => void;
 
   // Game state
@@ -25,6 +26,10 @@ interface GameStore {
   chatMessages: ChatMessage[];
   addChatMessage: (msg: ChatMessage) => void;
   setChatHistory: (messages: ChatMessage[]) => void;
+
+  // Challenge reveal
+  challengeReveal: ChallengeRevealEvent | null;
+  setChallengeReveal: (data: ChallengeRevealEvent | null) => void;
 
   // Error state
   error: string | null;
@@ -39,15 +44,18 @@ export const useGameStore = create<GameStore>((set) => ({
   playerId: null,
   hostId: null,
   roomPlayers: [],
+  roomSettings: null,
   setRoom: (roomCode, playerId) => set({ roomCode, playerId }),
-  setRoomPlayers: (players, hostId) => set({ roomPlayers: players, hostId }),
+  setRoomPlayers: (players, hostId, settings) => set({ roomPlayers: players, hostId, roomSettings: settings }),
   clearRoom: () => set({
     roomCode: null,
     playerId: null,
     hostId: null,
     roomPlayers: [],
+    roomSettings: null,
     gameState: null,
     chatMessages: [],
+    challengeReveal: null,
   }),
 
   gameState: null,
@@ -56,6 +64,9 @@ export const useGameStore = create<GameStore>((set) => ({
   chatMessages: [],
   addChatMessage: (msg) => set((s) => ({ chatMessages: [...s.chatMessages, msg] })),
   setChatHistory: (messages) => set({ chatMessages: messages }),
+
+  challengeReveal: null,
+  setChallengeReveal: (data) => set({ challengeReveal: data }),
 
   error: null,
   setError: (error) => set({ error }),

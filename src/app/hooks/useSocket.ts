@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { ClientToServerEvents, ServerToClientEvents } from '@/shared/protocol';
-import type { AiPersonality } from '@/shared/types';
+import type { AiPersonality, RoomSettings } from '@/shared/types';
 import { useGameStore } from '../stores/gameStore';
 
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -31,6 +31,7 @@ export function useSocket() {
     setError,
     addChatMessage,
     setChatHistory,
+    setChallengeReveal,
     roomCode,
     playerId,
   } = useGameStore();
@@ -66,7 +67,7 @@ export function useSocket() {
     });
 
     socket.on('room:updated', (data) => {
-      setRoomPlayers(data.players, data.hostId);
+      setRoomPlayers(data.players, data.hostId, data.settings);
     });
 
     socket.on('game:state', (state) => {
@@ -95,6 +96,10 @@ export function useSocket() {
       setGameState(null);
     });
 
+    socket.on('game:challenge_reveal', (data) => {
+      setChallengeReveal(data);
+    });
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
@@ -105,8 +110,9 @@ export function useSocket() {
       socket.off('chat:message');
       socket.off('chat:history');
       socket.off('game:rematch_to_lobby');
+      socket.off('game:challenge_reveal');
     };
-  }, [setConnected, setRoomPlayers, setGameState, setError, addChatMessage, setChatHistory]);
+  }, [setConnected, setRoomPlayers, setGameState, setError, addChatMessage, setChatHistory, setChallengeReveal]);
 
   const createRoom = useCallback((playerName: string): Promise<{ roomCode: string; playerId: string }> => {
     return new Promise((resolve, reject) => {
@@ -166,6 +172,18 @@ export function useSocket() {
     });
   }, []);
 
+  const updateRoomSettings = useCallback((settings: RoomSettings): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      socketRef.current.emit('room:update_settings', { settings }, (response) => {
+        if (response.success) {
+          resolve();
+        } else {
+          reject(new Error(response.error || 'Failed to update settings'));
+        }
+      });
+    });
+  }, []);
+
   const removeBot = useCallback((botId: string): Promise<void> => {
     return new Promise((resolve, reject) => {
       socketRef.current.emit('bot:remove', { botId }, (response) => {
@@ -188,5 +206,6 @@ export function useSocket() {
     rematch,
     addBot,
     removeBot,
+    updateRoomSettings,
   };
 }

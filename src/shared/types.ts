@@ -201,6 +201,7 @@ export interface Room {
   players: RoomPlayer[];
   gameState: GameState | null;
   createdAt: number;
+  settings: RoomSettings;
 }
 
 export interface RoomPlayer {
@@ -210,6 +211,19 @@ export interface RoomPlayer {
   connected: boolean;
   isBot?: boolean;
   personality?: AiPersonality;
+}
+
+// ─── Room Settings ───
+export interface RoomSettings {
+  actionTimerSeconds: number;
+}
+
+// ─── Challenge Reveal Event ───
+export interface ChallengeRevealEvent {
+  challengerName: string;
+  challengedName: string;
+  character: Character;
+  wasGenuine: boolean; // true = challenged player had the card (challenge fails)
 }
 
 // ─── Chat ───

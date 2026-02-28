@@ -77,7 +77,7 @@ export function BlockPrompt({ gameState }: BlockPromptProps) {
     headline = `${actor?.name} is trying to ASSASSINATE you!`;
     subtext = 'Block with Contessa to survive (you don\'t need to actually have her!)';
   } else if (isStealing) {
-    headline = `${actor?.name} is trying to steal your coins!`;
+    headline = `${actor?.name} is trying to steal 2 of your coins!`;
     subtext = 'Block with Captain or Ambassador to keep your coins';
   } else if (isForeignAid) {
     headline = `${actor?.name} is taking Foreign Aid (+2 coins)`;
