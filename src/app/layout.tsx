@@ -4,7 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Coup Online',
   description: 'Play Coup with friends online — bluff, challenge, and steal your way to victory in this multiplayer card game.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://coup.live'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://coup.chuds.dev'),
   openGraph: {
     title: 'Coup Online',
     description: 'Play Coup with friends online — bluff, challenge, and steal your way to victory in this multiplayer card game.',
