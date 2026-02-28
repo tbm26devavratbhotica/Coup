@@ -28,6 +28,8 @@ export function useSocket() {
     setRoomPlayers,
     setGameState,
     setError,
+    addChatMessage,
+    setChatHistory,
     roomCode,
     playerId,
   } = useGameStore();
@@ -80,6 +82,18 @@ export function useSocket() {
       setTimeout(() => setError(null), 3000);
     });
 
+    socket.on('chat:message', (data) => {
+      addChatMessage(data);
+    });
+
+    socket.on('chat:history', (data) => {
+      setChatHistory(data.messages);
+    });
+
+    socket.on('game:rematch_to_lobby', () => {
+      setGameState(null);
+    });
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
@@ -87,8 +101,11 @@ export function useSocket() {
       socket.off('game:state');
       socket.off('game:error');
       socket.off('room:error');
+      socket.off('chat:message');
+      socket.off('chat:history');
+      socket.off('game:rematch_to_lobby');
     };
-  }, [setConnected, setRoomPlayers, setGameState, setError]);
+  }, [setConnected, setRoomPlayers, setGameState, setError, addChatMessage, setChatHistory]);
 
   const createRoom = useCallback((playerName: string): Promise<{ roomCode: string; playerId: string }> => {
     return new Promise((resolve, reject) => {
@@ -128,11 +145,21 @@ export function useSocket() {
     sessionStorage.removeItem('coup_player');
   }, []);
 
+  const sendChat = useCallback((message: string) => {
+    socketRef.current.emit('chat:send', { message });
+  }, []);
+
+  const rematch = useCallback(() => {
+    socketRef.current.emit('game:rematch');
+  }, []);
+
   return {
     socket: socketRef.current,
     createRoom,
     joinRoom,
     startGame,
     leaveRoom,
+    sendChat,
+    rematch,
   };
 }

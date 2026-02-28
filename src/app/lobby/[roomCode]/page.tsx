@@ -6,16 +6,18 @@ import { useSocket } from '../../hooks/useSocket';
 import { useGameStore } from '../../stores/gameStore';
 import { MIN_PLAYERS, MAX_PLAYERS } from '@/shared/constants';
 import { GameStatus } from '@/shared/types';
+import { ChatPanel } from '../../components/chat/ChatPanel';
 
 export default function LobbyPage() {
   const router = useRouter();
   const params = useParams();
   const roomCode = params.roomCode as string;
-  const { startGame, leaveRoom } = useSocket();
+  const { startGame, leaveRoom, sendChat } = useSocket();
   const {
     playerId,
     hostId,
     roomPlayers,
+    chatMessages,
     gameState,
     error,
   } = useGameStore();
@@ -111,6 +113,12 @@ export default function LobbyPage() {
           <button className="btn-secondary w-full" onClick={handleLeave}>
             Leave Room
           </button>
+        </div>
+
+        {/* Chat */}
+        <div className="card-container mt-6">
+          <h2 className="font-bold text-gray-400 text-sm uppercase mb-2">Chat</h2>
+          <ChatPanel messages={chatMessages} myId={playerId} onSend={sendChat} />
         </div>
       </div>
     </div>

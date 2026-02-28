@@ -4,9 +4,11 @@ import { ClientGameState, TurnPhase } from '@/shared/types';
 
 interface GameOverOverlayProps {
   gameState: ClientGameState;
+  isHost: boolean;
+  onRematch: () => void;
 }
 
-export function GameOverOverlay({ gameState }: GameOverOverlayProps) {
+export function GameOverOverlay({ gameState, isHost, onRematch }: GameOverOverlayProps) {
   if (gameState.turnPhase !== TurnPhase.GameOver) return null;
 
   const winner = gameState.players.find(p => p.id === gameState.winnerId);
@@ -22,9 +24,21 @@ export function GameOverOverlay({ gameState }: GameOverOverlayProps) {
         <p className="text-lg text-coup-accent mb-6">
           {isMe ? 'Your bluffs were legendary.' : 'Better luck next time.'}
         </p>
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-400 text-sm mb-6">
           Game lasted {gameState.turnNumber} turns
         </p>
+        {isHost ? (
+          <button
+            className="btn-primary w-full"
+            onClick={onRematch}
+          >
+            Play Again
+          </button>
+        ) : (
+          <p className="text-gray-500 text-sm">
+            Waiting for host to start rematch...
+          </p>
+        )}
       </div>
     </div>
   );

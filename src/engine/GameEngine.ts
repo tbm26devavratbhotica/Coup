@@ -39,6 +39,11 @@ export class GameEngine {
     this.onStateChange = cb;
   }
 
+  destroy(): void {
+    this.clearTimer();
+    this.onStateChange = null;
+  }
+
   startGame(playerInfos: Array<{ id: string; name: string }>): void {
     this.game.initialize(playerInfos);
     this.clearTurnState();

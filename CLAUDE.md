@@ -91,14 +91,17 @@ Not every turn visits every phase. Income resolves immediately. Coup skips to In
 | `src/engine/Game.ts` | Game model: players, deck, turn order, treasury, action log |
 | `src/engine/Player.ts` | Player model: influences, coins, hasCharacter, revealInfluence |
 | `src/engine/Deck.ts` | Card deck: shuffle (Fisher-Yates), draw, return, reset |
-| `src/server/RoomManager.ts` | Room lifecycle: create, join, rejoin, leave, cleanup (24h TTL) |
+| `src/server/RoomManager.ts` | Room lifecycle: create, join, rejoin, leave, cleanup (24h TTL), chat storage, rematch reset |
 | `src/server/SocketHandler.ts` | Socket.io event routing: validates context, delegates to engine |
 | `src/server/StateSerializer.ts` | Per-player state filtering before sending to clients |
 | `server.ts` | Entry point: wires Express + Socket.io + Next.js |
 | `src/app/page.tsx` | Home screen UI (create/join room) |
 | `src/app/hooks/useSocket.ts` | Socket.io client hook with reconnection and session storage |
-| `src/app/stores/gameStore.ts` | Zustand store: connection, room, game state, error |
+| `src/app/stores/gameStore.ts` | Zustand store: connection, room, game, chat state, error |
 | `src/app/components/game/GameTable.tsx` | Main game layout component |
+| `src/app/components/chat/ChatPanel.tsx` | Chat message list + text input |
+| `src/app/components/game/GameCenterTabs.tsx` | Log/Chat tabbed container with unread indicator |
+| `src/app/components/game/GameOverOverlay.tsx` | Game over screen with rematch flow |
 
 ---
 
@@ -116,6 +119,14 @@ Not every turn visits every phase. Income resolves immediately. Coup skips to In
 1. Add the event signature to `ClientToServerEvents` or `ServerToClientEvents` in `src/shared/protocol.ts`
 2. Add the handler in `src/server/SocketHandler.ts`
 3. Add the client-side emit/listener in `src/app/hooks/useSocket.ts`
+
+### Chat System
+
+Room-scoped chat works in both lobby and in-game. Messages are stored server-side per room (up to `CHAT_MAX_HISTORY`), rate-limited to 1 per second per player, and sent to rejoining players via `chat:history`. In-game, the `GameCenterTabs` component provides Log and Chat tabs with an unread indicator.
+
+### Rematch Flow
+
+After a game finishes, the host can click "Play Again" which triggers `game:rematch` → server calls `resetToLobby()` (destroys engine, clears game state, removes disconnected players) → broadcasts `game:rematch_to_lobby` → all clients clear game state and redirect to the lobby. Chat history is preserved across rematches.
 
 ### Side Effect Pattern
 

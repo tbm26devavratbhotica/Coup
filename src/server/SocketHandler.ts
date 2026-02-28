@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from '../shared/protocol';
-import { GameState } from '../shared/types';
+import { GameState, GameStatus } from '../shared/types';
+import { CHAT_MAX_MESSAGE_LENGTH } from '../shared/constants';
 import { RoomManager } from './RoomManager';
 import { serializeForPlayer } from './StateSerializer';
 
@@ -92,6 +93,12 @@ export class SocketHandler {
         const state = engine.getFullState();
         socket.emit('game:state', serializeForPlayer(state, result.player.id));
       }
+
+      // Send chat history
+      const chatHistory = this.roomManager.getChatHistory(code);
+      if (chatHistory.length > 0) {
+        socket.emit('chat:history', { messages: chatHistory });
+      }
     });
 
     socket.on('room:leave', () => {
@@ -122,6 +129,57 @@ export class SocketHandler {
       });
 
       this.broadcastGameState(found.room.code, engine.getFullState());
+    });
+
+    // ─── Chat ───
+
+    socket.on('chat:send', (data) => {
+      const found = this.roomManager.getPlayerRoom(socket.id);
+      if (!found) return;
+
+      const msg = data.message;
+      if (!msg || typeof msg !== 'string' || msg.trim().length === 0 || msg.length > CHAT_MAX_MESSAGE_LENGTH) {
+        return;
+      }
+
+      const result = this.roomManager.addChatMessage(
+        found.room.code,
+        found.player.id,
+        found.player.name,
+        msg,
+      );
+      if ('error' in result) {
+        socket.emit('room:error', { message: result.error });
+        return;
+      }
+
+      this.io.to(found.room.code).emit('chat:message', result);
+    });
+
+    // ─── Rematch ───
+
+    socket.on('game:rematch', () => {
+      const found = this.roomManager.getPlayerRoom(socket.id);
+      if (!found) {
+        socket.emit('game:error', { message: 'Not in a room' });
+        return;
+      }
+
+      if (found.player.id !== found.room.hostId) {
+        socket.emit('game:error', { message: 'Only the host can start a rematch' });
+        return;
+      }
+
+      if (!found.room.gameState || found.room.gameState.status !== GameStatus.Finished) {
+        socket.emit('game:error', { message: 'Game is not finished' });
+        return;
+      }
+
+      const room = this.roomManager.resetToLobby(found.room.code);
+      if (!room) return;
+
+      this.io.to(room.code).emit('game:rematch_to_lobby');
+      this.broadcastRoomUpdate(room.code);
     });
 
     // ─── Game Actions ───

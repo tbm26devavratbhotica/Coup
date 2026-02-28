@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Room, RoomPlayer } from '../shared/types';
-import { MAX_PLAYERS, MIN_PLAYERS } from '../shared/constants';
+import { ChatMessage, Room, RoomPlayer } from '../shared/types';
+import { CHAT_MAX_HISTORY, CHAT_MAX_MESSAGE_LENGTH, CHAT_RATE_LIMIT_MS, MAX_PLAYERS, MIN_PLAYERS } from '../shared/constants';
 import { GameEngine } from '../engine/GameEngine';
 
 const ROOM_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -8,6 +8,8 @@ const ROOM_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 export class RoomManager {
   private rooms: Map<string, Room> = new Map();
   private engines: Map<string, GameEngine> = new Map();
+  private chatMessages: Map<string, ChatMessage[]> = new Map();
+  private lastChatTime: Map<string, number> = new Map();
   private cleanupInterval: ReturnType<typeof setInterval>;
 
   constructor() {
@@ -110,6 +112,7 @@ export class RoomManager {
     if (room.players.length === 0) {
       this.rooms.delete(roomCode);
       this.engines.delete(roomCode);
+      this.chatMessages.delete(roomCode);
       return null;
     }
 
@@ -144,6 +147,82 @@ export class RoomManager {
     return engine;
   }
 
+  // ─── Chat ───
+
+  addChatMessage(roomCode: string, playerId: string, playerName: string, message: string): ChatMessage | { error: string } {
+    const room = this.rooms.get(roomCode);
+    if (!room) return { error: 'Room not found' };
+
+    const trimmed = message.trim();
+    if (!trimmed || trimmed.length > CHAT_MAX_MESSAGE_LENGTH) {
+      return { error: `Message must be 1-${CHAT_MAX_MESSAGE_LENGTH} characters` };
+    }
+
+    // Rate limiting
+    const now = Date.now();
+    const lastTime = this.lastChatTime.get(playerId) || 0;
+    if (now - lastTime < CHAT_RATE_LIMIT_MS) {
+      return { error: 'Sending messages too fast' };
+    }
+    this.lastChatTime.set(playerId, now);
+
+    const chatMsg: ChatMessage = {
+      id: uuidv4(),
+      playerId,
+      playerName,
+      message: trimmed,
+      timestamp: now,
+    };
+
+    let history = this.chatMessages.get(roomCode);
+    if (!history) {
+      history = [];
+      this.chatMessages.set(roomCode, history);
+    }
+    history.push(chatMsg);
+    if (history.length > CHAT_MAX_HISTORY) {
+      history.shift();
+    }
+
+    return chatMsg;
+  }
+
+  getChatHistory(roomCode: string): ChatMessage[] {
+    return this.chatMessages.get(roomCode) || [];
+  }
+
+  // ─── Rematch ───
+
+  resetToLobby(roomCode: string): Room | null {
+    const room = this.rooms.get(roomCode);
+    if (!room) return null;
+
+    const engine = this.engines.get(roomCode);
+    if (engine) {
+      engine.destroy();
+      this.engines.delete(roomCode);
+    }
+
+    room.gameState = null;
+
+    // Remove disconnected players
+    room.players = room.players.filter(p => p.connected);
+
+    // If room is empty after filtering, delete it
+    if (room.players.length === 0) {
+      this.rooms.delete(roomCode);
+      this.chatMessages.delete(roomCode);
+      return null;
+    }
+
+    // Reassign host if needed
+    if (!room.players.find(p => p.id === room.hostId)) {
+      room.hostId = room.players[0].id;
+    }
+
+    return room;
+  }
+
   getPlayerRoom(socketId: string): { room: Room; player: RoomPlayer } | null {
     for (const room of this.rooms.values()) {
       const player = room.players.find(p => p.socketId === socketId);
@@ -158,6 +237,7 @@ export class RoomManager {
       if (now - room.createdAt > ROOM_TTL_MS) {
         this.rooms.delete(code);
         this.engines.delete(code);
+        this.chatMessages.delete(code);
       }
     }
   }

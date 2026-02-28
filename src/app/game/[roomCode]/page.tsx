@@ -8,17 +8,25 @@ import { GameTable } from '../../components/game/GameTable';
 
 export default function GamePage() {
   const router = useRouter();
-  useSocket(); // Keep socket connected
+  const { sendChat, rematch } = useSocket();
 
-  const { gameState, error } = useGameStore();
+  const { gameState, chatMessages, playerId, hostId, error } = useGameStore();
 
-  // Redirect to home if no game state
+  const isHost = playerId === hostId;
+
+  // Redirect when game state is cleared (rematch → lobby) or missing
   useEffect(() => {
     if (!gameState) {
       // Small delay to allow state to load (reconnection)
       const timer = setTimeout(() => {
-        if (!useGameStore.getState().gameState) {
-          router.push('/');
+        const current = useGameStore.getState();
+        if (!current.gameState) {
+          if (current.roomCode) {
+            // Rematch: sent back to lobby
+            router.push(`/lobby/${current.roomCode}`);
+          } else {
+            router.push('/');
+          }
         }
       }, 2000);
       return () => clearTimeout(timer);
@@ -41,7 +49,13 @@ export default function GamePage() {
           {error}
         </div>
       )}
-      <GameTable gameState={gameState} />
+      <GameTable
+        gameState={gameState}
+        chatMessages={chatMessages}
+        onSendChat={sendChat}
+        isHost={isHost}
+        onRematch={rematch}
+      />
     </>
   );
 }

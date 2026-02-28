@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { ClientGameState, RoomPlayer } from '@/shared/types';
+import { ChatMessage, ClientGameState, RoomPlayer } from '@/shared/types';
 
 interface GameStore {
   // Connection state
@@ -19,7 +19,12 @@ interface GameStore {
 
   // Game state
   gameState: ClientGameState | null;
-  setGameState: (state: ClientGameState) => void;
+  setGameState: (state: ClientGameState | null) => void;
+
+  // Chat state
+  chatMessages: ChatMessage[];
+  addChatMessage: (msg: ChatMessage) => void;
+  setChatHistory: (messages: ChatMessage[]) => void;
 
   // Error state
   error: string | null;
@@ -42,10 +47,15 @@ export const useGameStore = create<GameStore>((set) => ({
     hostId: null,
     roomPlayers: [],
     gameState: null,
+    chatMessages: [],
   }),
 
   gameState: null,
   setGameState: (state) => set({ gameState: state }),
+
+  chatMessages: [],
+  addChatMessage: (msg) => set((s) => ({ chatMessages: [...s.chatMessages, msg] })),
+  setChatHistory: (messages) => set({ chatMessages: messages }),
 
   error: null,
   setError: (error) => set({ error }),

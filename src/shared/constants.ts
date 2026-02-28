@@ -16,6 +16,11 @@ export const EXCHANGE_DRAW_COUNT = 2;
 // Total coins in the game (physical game has 50)
 export const TOTAL_COINS = 50;
 
+// ─── Chat Constants ───
+export const CHAT_MAX_MESSAGE_LENGTH = 200;
+export const CHAT_RATE_LIMIT_MS = 1000;
+export const CHAT_MAX_HISTORY = 50;
+
 // ─── Action Definitions ───
 export interface ActionDefinition {
   type: ActionType;

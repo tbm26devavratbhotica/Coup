@@ -1,23 +1,28 @@
 'use client';
 
-import { ClientGameState, TurnPhase } from '@/shared/types';
+import { ChatMessage, ClientGameState } from '@/shared/types';
 import { PlayerSeat } from './PlayerSeat';
 import { CardFace } from './CardFace';
+import { CoinIcon } from '../icons';
 import { ActionBar } from './ActionBar';
 import { ChallengePrompt } from './ChallengePrompt';
 import { BlockPrompt } from './BlockPrompt';
 import { BlockChallengePrompt } from './BlockChallengePrompt';
 import { InfluenceLossPrompt } from './InfluenceLossPrompt';
 import { ExchangeView } from './ExchangeView';
-import { ActionLog } from './ActionLog';
+import { GameCenterTabs } from './GameCenterTabs';
 import { GameOverOverlay } from './GameOverOverlay';
 import { PhaseStatus } from './PhaseStatus';
 
 interface GameTableProps {
   gameState: ClientGameState;
+  chatMessages: ChatMessage[];
+  onSendChat: (message: string) => void;
+  isHost: boolean;
+  onRematch: () => void;
 }
 
-export function GameTable({ gameState }: GameTableProps) {
+export function GameTable({ gameState, chatMessages, onSendChat, isHost, onRematch }: GameTableProps) {
   const me = gameState.players.find(p => p.id === gameState.myId);
   const opponents = gameState.players.filter(p => p.id !== gameState.myId);
   const currentPlayerId = gameState.players[gameState.currentPlayerIndex]?.id;
@@ -50,7 +55,12 @@ export function GameTable({ gameState }: GameTableProps) {
 
       {/* Center: Log + Interactive area */}
       <div className="flex-1 flex flex-col gap-2 min-h-0">
-        <ActionLog log={gameState.actionLog} />
+        <GameCenterTabs
+          log={gameState.actionLog}
+          chatMessages={chatMessages}
+          myId={gameState.myId}
+          onSendChat={onSendChat}
+        />
 
         {/* Interactive prompts - only one shows at a time */}
         <div className="flex flex-col gap-2">
@@ -68,8 +78,9 @@ export function GameTable({ gameState }: GameTableProps) {
         <div className={`mt-3 card-container ${!me.isAlive ? 'opacity-50' : 'border-coup-accent/30'}`}>
           <div className="flex items-center justify-between mb-2">
             <span className="font-bold text-coup-accent text-sm">Your Hand</span>
-            <span className="text-coup-gold font-bold text-sm">
-              {me.coins} coin{me.coins !== 1 ? 's' : ''}
+            <span className="flex items-center gap-1 text-coup-gold font-bold text-sm">
+              <CoinIcon size={16} />
+              {me.coins}
             </span>
           </div>
           <div className="flex gap-3 justify-center">
@@ -83,7 +94,7 @@ export function GameTable({ gameState }: GameTableProps) {
         </div>
       )}
 
-      <GameOverOverlay gameState={gameState} />
+      <GameOverOverlay gameState={gameState} isHost={isHost} onRematch={onRematch} />
     </div>
   );
 }

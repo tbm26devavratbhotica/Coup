@@ -1,4 +1,4 @@
-import { ActionType, Character, ClientGameState, RoomPlayer } from './types';
+import { ActionType, Character, ChatMessage, ClientGameState, RoomPlayer } from './types';
 
 // ─── Client → Server Events ───
 export interface ClientToServerEvents {
@@ -18,6 +18,12 @@ export interface ClientToServerEvents {
   'game:choose_influence_loss': (data: { influenceIndex: number }) => void;
   'game:choose_exchange': (data: { keepIndices: number[] }) => void;
 
+  // Chat
+  'chat:send': (data: { message: string }) => void;
+
+  // Rematch
+  'game:rematch': () => void;
+
   // Reconnection
   'room:rejoin': (data: { roomCode: string; playerId: string }, callback: (response: RoomResponse) => void) => void;
 }
@@ -29,6 +35,9 @@ export interface ServerToClientEvents {
   'game:state': (state: ClientGameState) => void;
   'game:error': (data: { message: string }) => void;
   'game:log': (data: { message: string }) => void;
+  'chat:message': (data: ChatMessage) => void;
+  'chat:history': (data: { messages: ChatMessage[] }) => void;
+  'game:rematch_to_lobby': () => void;
 }
 
 // ─── Response Types ───
