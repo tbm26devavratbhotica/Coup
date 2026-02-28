@@ -93,6 +93,24 @@ function OverviewTab() {
           Bluffing is not just allowed &mdash; it&apos;s essential!
         </p>
       </div>
+      <div className="border-t border-gray-700 pt-4 mt-2">
+        <h3 className="text-coup-accent font-bold text-base mb-2">About the Original Game</h3>
+        <p>
+          Coup is a card game designed by <span className="text-white font-medium">Rikki Tahta</span>,
+          originally published in 2012 by <span className="text-white font-medium">La Mame Games</span> and{' '}
+          <span className="text-white font-medium">Indie Boards &amp; Cards</span>.
+          This is a fan-made digital adaptation &mdash; if you enjoy the game, please support the creators
+          by{' '}
+          <a
+            href="https://www.amazon.com/Indie-Boards-and-Cards-COU1IBC/dp/B00GDI4HX4"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-coup-accent underline hover:text-white"
+          >
+            purchasing the physical game
+          </a>.
+        </p>
+      </div>
     </div>
   );
 }
