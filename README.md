@@ -218,5 +218,6 @@ Contributions are welcome! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) fo
 
 ## Acknowledgments
 
-- **Coup** is a card game designed by Rikki Tahta, published by La Mame Games and Indie Boards & Cards
-- This is a fan-made digital adaptation for personal and educational use
+- **Coup** is a card game designed by [Rikki Tahta](https://en.wikipedia.org/wiki/Coup_(card_game)), originally published in 2012 by **La Mame Games** and **[Indie Boards & Cards](https://indieboardsandcards.com/our-games/coup/)**
+- This is a fan-made digital adaptation for personal and educational use — it is not affiliated with or endorsed by the original creators
+- If you enjoy the game, please support the creators by [purchasing the physical game](https://www.amazon.com/Indie-Boards-and-Cards-COU1IBC/dp/B00GDI4HX4)

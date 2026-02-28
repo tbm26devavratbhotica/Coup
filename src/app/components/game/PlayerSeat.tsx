@@ -97,16 +97,18 @@ export function PlayerSeat({
         ${isMe ? 'bg-coup-surface' : ''}`}
       onClick={selectable ? onSelect : undefined}
     >
-      <div className="flex items-center justify-between mb-2 gap-2">
-        <span className={`font-bold text-sm truncate max-w-[80px] ${isMe ? 'text-coup-accent' : ''}`}>
-          {player.name}
-          {isMe && ' (You)'}
+      <div className="flex items-center justify-between mb-2 gap-1.5">
+        <div className="flex items-center gap-1 min-w-0">
+          <span className={`font-bold text-sm truncate ${isMe ? 'text-coup-accent' : ''}`}>
+            {player.name}
+            {isMe && ' (You)'}
+          </span>
           {player.isBot && (
-            <span className="ml-1 text-[10px] bg-blue-600 text-white px-1 py-px rounded font-bold align-middle">
+            <span className="shrink-0 text-[10px] bg-blue-600 text-white px-1 py-px rounded font-bold leading-tight">
               BOT
             </span>
           )}
-        </span>
+        </div>
         <span className="flex items-center gap-1 text-coup-gold font-bold text-sm shrink-0 relative">
           <CoinIcon size={14} />
           {player.coins}
