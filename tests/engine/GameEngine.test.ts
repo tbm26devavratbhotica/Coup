@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GameEngine } from '@/engine/GameEngine';
 import { ActionType, Character, TurnPhase, GameStatus, GameState } from '@/shared/types';
+import { CHALLENGE_TIMER_MS } from '@/shared/constants';
 
-function createEngine(playerCount = 3): GameEngine {
-  const engine = new GameEngine('TEST01');
+function createEngine(playerCount = 3, timerMs?: number): GameEngine {
+  const engine = new GameEngine('TEST01', timerMs);
   const players = [];
   const names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank'];
   for (let i = 0; i < playerCount; i++) {
@@ -385,6 +386,127 @@ describe('GameEngine', () => {
       expect(state.pendingAction!.type).toBe(ActionType.Tax);
       expect(state.challengeState).toBeDefined();
       expect(state.timerExpiry).not.toBeNull();
+    });
+  });
+
+  // ──────────────────────────────────────────────────
+  // Custom timerMs
+  // ──────────────────────────────────────────────────
+
+  describe('Custom timerMs', () => {
+    it('uses default timer when no timerMs provided', () => {
+      const engine = createEngine();
+      engine.handleAction('p1', ActionType.Tax);
+      expect(engine.timerExpiry).not.toBeNull();
+      // The timer should be approximately CHALLENGE_TIMER_MS from now
+      const expectedExpiry = Date.now() + CHALLENGE_TIMER_MS;
+      expect(engine.timerExpiry).toBeGreaterThanOrEqual(expectedExpiry - 100);
+      expect(engine.timerExpiry).toBeLessThanOrEqual(expectedExpiry + 100);
+    });
+
+    it('uses custom timer when timerMs provided', () => {
+      const engine = createEngine(3, 30_000);
+      engine.handleAction('p1', ActionType.Tax);
+      expect(engine.timerExpiry).not.toBeNull();
+      const expectedExpiry = Date.now() + 30_000;
+      expect(engine.timerExpiry).toBeGreaterThanOrEqual(expectedExpiry - 100);
+      expect(engine.timerExpiry).toBeLessThanOrEqual(expectedExpiry + 100);
+    });
+
+    it('custom timer auto-resolves at the correct time', () => {
+      const engine = createEngine(3, 10_000);
+      setCards(engine, 'p1', [Character.Duke, Character.Captain]);
+      engine.handleAction('p1', ActionType.Tax);
+      expect(engine.game.turnPhase).toBe(TurnPhase.AwaitingActionChallenge);
+
+      // Advance only 9 seconds — should NOT resolve yet
+      vi.advanceTimersByTime(9_000);
+      expect(engine.game.turnPhase).toBe(TurnPhase.AwaitingActionChallenge);
+
+      // Advance past 10s — should resolve
+      vi.advanceTimersByTime(1_000);
+      expect(engine.game.getPlayer('p1')!.coins).toBe(2 + 3);
+    });
+  });
+
+  // ──────────────────────────────────────────────────
+  // Challenge reveal
+  // ──────────────────────────────────────────────────
+
+  describe('Challenge reveal', () => {
+    it('lastChallengeReveal is null initially', () => {
+      const engine = createEngine();
+      expect(engine.lastChallengeReveal).toBeNull();
+    });
+
+    it('stores challenge reveal when action challenge fails (genuine)', () => {
+      const engine = createEngine();
+      setCards(engine, 'p1', [Character.Duke, Character.Captain]);
+
+      engine.handleAction('p1', ActionType.Tax);
+      engine.handleChallenge('p2');
+
+      expect(engine.lastChallengeReveal).not.toBeNull();
+      expect(engine.lastChallengeReveal!.challengerName).toBe('Bob');
+      expect(engine.lastChallengeReveal!.challengedName).toBe('Alice');
+      expect(engine.lastChallengeReveal!.character).toBe(Character.Duke);
+      expect(engine.lastChallengeReveal!.wasGenuine).toBe(true);
+    });
+
+    it('stores challenge reveal when action challenge succeeds (bluff)', () => {
+      const engine = createEngine();
+      setCards(engine, 'p1', [Character.Captain, Character.Contessa]); // no Duke
+
+      engine.handleAction('p1', ActionType.Tax);
+      engine.handleChallenge('p2');
+
+      expect(engine.lastChallengeReveal).not.toBeNull();
+      expect(engine.lastChallengeReveal!.challengedName).toBe('Alice');
+      expect(engine.lastChallengeReveal!.character).toBe(Character.Duke);
+      expect(engine.lastChallengeReveal!.wasGenuine).toBe(false);
+    });
+
+    it('stores challenge reveal on block challenge (blocker genuine)', () => {
+      const engine = createEngine();
+      setCards(engine, 'p2', [Character.Duke, Character.Assassin]);
+
+      engine.handleAction('p1', ActionType.ForeignAid);
+      engine.handleBlock('p2', Character.Duke);
+      engine.handleChallengeBlock('p1');
+
+      expect(engine.lastChallengeReveal).not.toBeNull();
+      expect(engine.lastChallengeReveal!.challengerName).toBe('Alice');
+      expect(engine.lastChallengeReveal!.challengedName).toBe('Bob');
+      expect(engine.lastChallengeReveal!.character).toBe(Character.Duke);
+      expect(engine.lastChallengeReveal!.wasGenuine).toBe(true);
+    });
+
+    it('stores challenge reveal on block challenge (blocker bluffing)', () => {
+      const engine = createEngine();
+      setCards(engine, 'p2', [Character.Captain, Character.Assassin]); // no Duke
+
+      engine.handleAction('p1', ActionType.ForeignAid);
+      engine.handleBlock('p2', Character.Duke);
+      engine.handleChallengeBlock('p1');
+
+      expect(engine.lastChallengeReveal).not.toBeNull();
+      expect(engine.lastChallengeReveal!.challengedName).toBe('Bob');
+      expect(engine.lastChallengeReveal!.character).toBe(Character.Duke);
+      expect(engine.lastChallengeReveal!.wasGenuine).toBe(false);
+    });
+
+    it('no challenge reveal when no challenge occurs', () => {
+      const engine = createEngine();
+      engine.handleAction('p1', ActionType.Income);
+      expect(engine.lastChallengeReveal).toBeNull();
+    });
+
+    it('no challenge reveal when challenge is passed', () => {
+      const engine = createEngine();
+      engine.handleAction('p1', ActionType.Tax);
+      engine.handlePassChallenge('p2');
+      engine.handlePassChallenge('p3');
+      expect(engine.lastChallengeReveal).toBeNull();
     });
   });
 });

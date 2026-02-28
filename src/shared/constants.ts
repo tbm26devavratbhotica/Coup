@@ -1,4 +1,4 @@
-import { ActionType, AiPersonality, Character } from './types';
+import { ActionType, AiPersonality, Character, RoomSettings } from './types';
 
 // ─── Game Constants ───
 export const MIN_PLAYERS = 2;
@@ -12,6 +12,11 @@ export const FORCED_COUP_THRESHOLD = 10;
 export const CHALLENGE_TIMER_MS = 15_000;
 export const BLOCK_TIMER_MS = 15_000;
 export const EXCHANGE_DRAW_COUNT = 2;
+
+// ─── Room Settings ───
+export const DEFAULT_ROOM_SETTINGS: RoomSettings = { actionTimerSeconds: 15 };
+export const MIN_ACTION_TIMER = 10;
+export const MAX_ACTION_TIMER = 60;
 
 // Total coins in the game (physical game has 50)
 export const TOTAL_COINS = 50;

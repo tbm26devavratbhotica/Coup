@@ -15,6 +15,7 @@ import {
   FORCED_COUP_THRESHOLD,
   EXCHANGE_DRAW_COUNT,
 } from '../shared/constants';
+import type { ChallengeRevealEvent } from '../shared/types';
 import { Game } from './Game';
 import { Player } from './Player';
 
@@ -34,7 +35,8 @@ export type SideEffect =
   | { type: 'clear_timer' }
   | { type: 'log'; message: string }
   | { type: 'start_exchange'; playerId: string; drawnCards: Character[] }
-  | { type: 'win_check' };
+  | { type: 'win_check' }
+  | { type: 'challenge_reveal'; challengerName: string; challengedName: string; character: Character; wasGenuine: boolean };
 
 export interface ResolverResult {
   newPhase: TurnPhase;
@@ -47,6 +49,11 @@ export interface ResolverResult {
 }
 
 export class ActionResolver {
+  private timerMs: number;
+
+  constructor(timerMs?: number) {
+    this.timerMs = timerMs ?? CHALLENGE_TIMER_MS;
+  }
 
   /**
    * Player declares an action.
@@ -146,7 +153,7 @@ export class ActionResolver {
 
     // Challengeable actions go to challenge phase
     if (def.challengeable) {
-      sideEffects.push({ type: 'set_timer', durationMs: CHALLENGE_TIMER_MS });
+      sideEffects.push({ type: 'set_timer', durationMs: this.timerMs });
       return {
         newPhase: TurnPhase.AwaitingActionChallenge,
         pendingAction,
@@ -165,7 +172,7 @@ export class ActionResolver {
 
     // Non-challengeable but blockable (only Foreign Aid)
     if (def.blockedBy.length > 0) {
-      sideEffects.push({ type: 'set_timer', durationMs: BLOCK_TIMER_MS });
+      sideEffects.push({ type: 'set_timer', durationMs: this.timerMs });
       return {
         newPhase: TurnPhase.AwaitingBlock,
         pendingAction,
@@ -204,6 +211,13 @@ export class ActionResolver {
 
     if (challenged.hasCharacter(claimedChar)) {
       // Challenge FAILS — challenger loses influence
+      sideEffects.push({
+        type: 'challenge_reveal',
+        challengerName: challenger.name,
+        challengedName: challenged.name,
+        character: claimedChar,
+        wasGenuine: true,
+      });
       sideEffects.push({
         type: 'log',
         message: `${challenged.name} reveals ${claimedChar} — challenge fails! ${challenger.name} must lose an influence.`,
@@ -244,6 +258,13 @@ export class ActionResolver {
       };
     } else {
       // Challenge SUCCEEDS — challenged player loses influence, action cancelled
+      sideEffects.push({
+        type: 'challenge_reveal',
+        challengerName: challenger.name,
+        challengedName: challenged.name,
+        character: claimedChar,
+        wasGenuine: false,
+      });
       sideEffects.push({
         type: 'log',
         message: `${challenged.name} does NOT have ${claimedChar} — challenge succeeds!`,
@@ -290,7 +311,7 @@ export class ActionResolver {
 
     // If blockable, go to block phase
     if (def.blockedBy.length > 0) {
-      sideEffects.push({ type: 'set_timer', durationMs: BLOCK_TIMER_MS });
+      sideEffects.push({ type: 'set_timer', durationMs: this.timerMs });
       return {
         newPhase: TurnPhase.AwaitingBlock,
         pendingAction,
@@ -317,7 +338,7 @@ export class ActionResolver {
     const sideEffects: SideEffect[] = [{ type: 'clear_timer' }];
 
     if (def.blockedBy.length > 0) {
-      sideEffects.push({ type: 'set_timer', durationMs: BLOCK_TIMER_MS });
+      sideEffects.push({ type: 'set_timer', durationMs: this.timerMs });
       return {
         newPhase: TurnPhase.AwaitingBlock,
         pendingAction,
@@ -364,7 +385,7 @@ export class ActionResolver {
     const sideEffects: SideEffect[] = [
       { type: 'clear_timer' },
       { type: 'log', message: `${blocker.name} blocks with ${claimedCharacter}!` },
-      { type: 'set_timer', durationMs: CHALLENGE_TIMER_MS },
+      { type: 'set_timer', durationMs: this.timerMs },
     ];
 
     const pendingBlock: PendingBlock = { blockerId, claimedCharacter };
@@ -422,6 +443,13 @@ export class ActionResolver {
       // Block challenge FAILS — blocker proves they have the card
       // Challenger (actor) loses influence, action is blocked
       sideEffects.push({
+        type: 'challenge_reveal',
+        challengerName: challenger.name,
+        challengedName: blocker.name,
+        character: claimedChar,
+        wasGenuine: true,
+      });
+      sideEffects.push({
         type: 'log',
         message: `${blocker.name} reveals ${claimedChar} — block stands! ${challenger.name} must lose an influence.`,
       });
@@ -464,6 +492,13 @@ export class ActionResolver {
       };
     } else {
       // Block challenge SUCCEEDS — blocker lied, action proceeds
+      sideEffects.push({
+        type: 'challenge_reveal',
+        challengerName: challenger.name,
+        challengedName: blocker.name,
+        character: claimedChar,
+        wasGenuine: false,
+      });
       sideEffects.push({
         type: 'log',
         message: `${blocker.name} does NOT have ${claimedChar} — block fails! Action proceeds.`,
@@ -575,7 +610,7 @@ export class ActionResolver {
             ? game.getPlayer(pendingAction.targetId)?.isAlive ?? false
             : true;
           if (targetAlive) {
-            sideEffects.push({ type: 'set_timer', durationMs: BLOCK_TIMER_MS });
+            sideEffects.push({ type: 'set_timer', durationMs: this.timerMs });
             return {
               newPhase: TurnPhase.AwaitingBlock,
               pendingAction,

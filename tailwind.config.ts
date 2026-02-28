@@ -26,6 +26,9 @@ const config: Config = {
         'fade-in': 'fadeIn 0.3s ease-out',
         'pulse-gold': 'pulseGold 2s ease-in-out infinite',
         'coin-float': 'coinFloat 1.2s ease-out forwards',
+        'challenge-card-in': 'challengeCardIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+        'challenge-card-out': 'challengeCardOut 0.8s ease-in forwards',
+        'card-from-deck': 'cardFromDeck 0.6s ease-out forwards',
       },
       keyframes: {
         flip: {
@@ -48,6 +51,19 @@ const config: Config = {
         coinFloat: {
           '0%': { transform: 'translateY(0)', opacity: '1' },
           '100%': { transform: 'translateY(-20px)', opacity: '0' },
+        },
+        challengeCardIn: {
+          '0%': { transform: 'scale(0)', opacity: '0' },
+          '70%': { transform: 'scale(1.1)', opacity: '1' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        challengeCardOut: {
+          '0%': { transform: 'scale(1) translate(0, 0)', opacity: '1' },
+          '100%': { transform: 'scale(0.3) translate(80px, -120px)', opacity: '0' },
+        },
+        cardFromDeck: {
+          '0%': { transform: 'scale(0.3) translate(80px, -120px)', opacity: '0' },
+          '100%': { transform: 'scale(1) translate(0, 0)', opacity: '1' },
         },
       },
     },

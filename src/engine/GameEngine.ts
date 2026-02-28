@@ -1,5 +1,6 @@
 import {
   ActionType,
+  ChallengeRevealEvent,
   Character,
   TurnPhase,
   GameState,
@@ -9,7 +10,6 @@ import {
   InfluenceLossRequest,
   ExchangeState,
 } from '../shared/types';
-import { ACTION_DEFINITIONS, CHALLENGE_TIMER_MS, BLOCK_TIMER_MS } from '../shared/constants';
 import { Game } from './Game';
 import { ActionResolver, ResolverResult, SideEffect } from './ActionResolver';
 
@@ -27,12 +27,13 @@ export class GameEngine {
   influenceLossRequest: InfluenceLossRequest | null = null;
   exchangeState: ExchangeState | null = null;
   timerExpiry: number | null = null;
+  lastChallengeReveal: ChallengeRevealEvent | null = null;
   private timerHandle: ReturnType<typeof setTimeout> | null = null;
   private blockPassedPlayerIds: Set<string> | null = null;
 
-  constructor(roomCode: string) {
+  constructor(roomCode: string, timerMs?: number) {
     this.game = new Game(roomCode);
-    this.resolver = new ActionResolver();
+    this.resolver = new ActionResolver(timerMs);
   }
 
   setOnStateChange(cb: StateChangeCallback): void {
@@ -352,6 +353,15 @@ export class GameEngine {
       }
       case 'win_check': {
         this.game.checkWinCondition();
+        break;
+      }
+      case 'challenge_reveal': {
+        this.lastChallengeReveal = {
+          challengerName: effect.challengerName,
+          challengedName: effect.challengedName,
+          character: effect.character,
+          wasGenuine: effect.wasGenuine,
+        };
         break;
       }
     }

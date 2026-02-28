@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { ChatMessage, ClientGameState } from '@/shared/types';
 import { PlayerSeat } from './PlayerSeat';
 import { CardFace } from './CardFace';
@@ -12,8 +13,10 @@ import { InfluenceLossPrompt } from './InfluenceLossPrompt';
 import { ExchangeView } from './ExchangeView';
 import { GameCenterTabs } from './GameCenterTabs';
 import { GameOverOverlay } from './GameOverOverlay';
+import { ChallengeRevealOverlay } from './ChallengeRevealOverlay';
 import { PhaseStatus } from './PhaseStatus';
 import { WaitingView } from './WaitingView';
+import { HowToPlay } from '../home/HowToPlay';
 
 interface GameTableProps {
   gameState: ClientGameState;
@@ -24,6 +27,7 @@ interface GameTableProps {
 }
 
 export function GameTable({ gameState, chatMessages, onSendChat, isHost, onRematch }: GameTableProps) {
+  const [showRules, setShowRules] = useState(false);
   const me = gameState.players.find(p => p.id === gameState.myId);
   const opponents = gameState.players.filter(p => p.id !== gameState.myId);
   const currentPlayerId = gameState.players[gameState.currentPlayerIndex]?.id;
@@ -34,7 +38,16 @@ export function GameTable({ gameState, chatMessages, onSendChat, isHost, onRemat
       <div className="flex items-center justify-between mb-2 text-xs text-gray-500">
         <span>Room: <span className="text-gray-400 font-mono">{gameState.roomCode}</span></span>
         <span>Turn {gameState.turnNumber}</span>
-        <span>Deck: {gameState.deckCount}</span>
+        <div className="flex items-center gap-2">
+          <span>Deck: {gameState.deckCount}</span>
+          <button
+            onClick={() => setShowRules(true)}
+            className="w-5 h-5 rounded-full border border-gray-600 text-gray-400 hover:border-coup-accent hover:text-coup-accent transition text-xs font-bold flex items-center justify-center"
+            title="How to Play"
+          >
+            ?
+          </button>
+        </div>
       </div>
 
       {/* Phase status banner */}
@@ -98,6 +111,8 @@ export function GameTable({ gameState, chatMessages, onSendChat, isHost, onRemat
       )}
 
       <GameOverOverlay gameState={gameState} isHost={isHost} onRematch={onRematch} />
+      <ChallengeRevealOverlay />
+      <HowToPlay open={showRules} onClose={() => setShowRules(false)} />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { RoomManager } from '@/server/RoomManager';
+import { DEFAULT_ROOM_SETTINGS, MIN_ACTION_TIMER, MAX_ACTION_TIMER } from '@/shared/constants';
+import { ActionType, TurnPhase } from '@/shared/types';
 
 describe('RoomManager', () => {
   let manager: RoomManager;
@@ -474,6 +476,160 @@ describe('RoomManager', () => {
       manager.setBotController(room.code, mockController);
 
       expect(manager.getBotController(room.code)).toBe(mockController);
+    });
+  });
+
+  // ─── Room Settings ───
+
+  describe('Room settings', () => {
+    it('createRoom initializes with default settings', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      expect(room.settings).toBeDefined();
+      expect(room.settings.actionTimerSeconds).toBe(DEFAULT_ROOM_SETTINGS.actionTimerSeconds);
+    });
+
+    it('createRoom settings are a copy, not a reference', () => {
+      const { room: room1 } = manager.createRoom('Alice', 'socket1');
+      const { room: room2 } = manager.createRoom('Bob', 'socket2');
+      room1.settings.actionTimerSeconds = 60;
+      expect(room2.settings.actionTimerSeconds).toBe(DEFAULT_ROOM_SETTINGS.actionTimerSeconds);
+    });
+  });
+
+  describe('updateSettings()', () => {
+    it('updates action timer to a valid value', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: 30 });
+      expect('error' in result).toBe(false);
+
+      const updated = manager.getRoom(room.code)!;
+      expect(updated.settings.actionTimerSeconds).toBe(30);
+    });
+
+    it('accepts minimum timer value', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: MIN_ACTION_TIMER });
+      expect('error' in result).toBe(false);
+
+      const updated = manager.getRoom(room.code)!;
+      expect(updated.settings.actionTimerSeconds).toBe(MIN_ACTION_TIMER);
+    });
+
+    it('accepts maximum timer value', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: MAX_ACTION_TIMER });
+      expect('error' in result).toBe(false);
+
+      const updated = manager.getRoom(room.code)!;
+      expect(updated.settings.actionTimerSeconds).toBe(MAX_ACTION_TIMER);
+    });
+
+    it('rounds non-integer timer values', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: 22.7 });
+      expect('error' in result).toBe(false);
+
+      const updated = manager.getRoom(room.code)!;
+      expect(updated.settings.actionTimerSeconds).toBe(23);
+    });
+
+    it('rejects timer below minimum', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: MIN_ACTION_TIMER - 1 });
+      expect('error' in result).toBe(true);
+      if ('error' in result) {
+        expect(result.error).toContain('between');
+      }
+    });
+
+    it('rejects timer above maximum', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: MAX_ACTION_TIMER + 1 });
+      expect('error' in result).toBe(true);
+      if ('error' in result) {
+        expect(result.error).toContain('between');
+      }
+    });
+
+    it('rejects if room not found', () => {
+      const result = manager.updateSettings('ZZZZZZ', { actionTimerSeconds: 30 });
+      expect('error' in result).toBe(true);
+      if ('error' in result) {
+        expect(result.error).toContain('not found');
+      }
+    });
+
+    it('rejects if game is in progress', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      manager.joinRoom(room.code, 'Bob', 'socket2');
+      manager.startGame(room.code);
+
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: 30 });
+      expect('error' in result).toBe(true);
+      if ('error' in result) {
+        expect(result.error).toContain('during a game');
+      }
+    });
+
+    it('is case-insensitive on room code', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      const result = manager.updateSettings(room.code.toLowerCase(), { actionTimerSeconds: 30 });
+      expect('error' in result).toBe(false);
+    });
+  });
+
+  describe('Settings preserved across rematch', () => {
+    it('resetToLobby preserves custom settings', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      manager.joinRoom(room.code, 'Bob', 'socket2');
+
+      manager.updateSettings(room.code, { actionTimerSeconds: 45 });
+      manager.startGame(room.code);
+
+      const reset = manager.resetToLobby(room.code);
+      expect(reset).not.toBeNull();
+      expect(reset!.settings.actionTimerSeconds).toBe(45);
+    });
+  });
+
+  describe('startGame() uses room settings for engine timer', () => {
+    it('passes custom timer to engine', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      manager.joinRoom(room.code, 'Bob', 'socket2');
+      manager.updateSettings(room.code, { actionTimerSeconds: 30 });
+
+      const result = manager.startGame(room.code);
+      expect('error' in result).toBe(false);
+
+      const engine = manager.getEngine(room.code);
+      expect(engine).toBeDefined();
+      // Verify indirectly: trigger a challengeable action and check timer
+      engine!.game.currentPlayerIndex = 0;
+      engine!.game.turnPhase = TurnPhase.AwaitingAction as any;
+      engine!.handleAction(engine!.game.players[0].id, ActionType.Tax as any);
+      expect(engine!.timerExpiry).not.toBeNull();
+
+      const expectedExpiry = Date.now() + 30_000;
+      expect(engine!.timerExpiry!).toBeGreaterThanOrEqual(expectedExpiry - 200);
+      expect(engine!.timerExpiry!).toBeLessThanOrEqual(expectedExpiry + 200);
+    });
+
+    it('uses default timer when settings are not changed', () => {
+      const { room } = manager.createRoom('Alice', 'socket1');
+      manager.joinRoom(room.code, 'Bob', 'socket2');
+
+      const result = manager.startGame(room.code);
+      expect('error' in result).toBe(false);
+
+      const engine = manager.getEngine(room.code);
+      expect(engine).toBeDefined();
+      engine!.game.currentPlayerIndex = 0;
+      engine!.game.turnPhase = TurnPhase.AwaitingAction as any;
+      engine!.handleAction(engine!.game.players[0].id, ActionType.Tax as any);
+
+      const expectedExpiry = Date.now() + DEFAULT_ROOM_SETTINGS.actionTimerSeconds * 1000;
+      expect(engine!.timerExpiry!).toBeGreaterThanOrEqual(expectedExpiry - 200);
+      expect(engine!.timerExpiry!).toBeLessThanOrEqual(expectedExpiry + 200);
     });
   });
 });

@@ -156,6 +156,27 @@ export class SocketHandler {
       this.broadcastRoomUpdate(found.room.code);
     });
 
+    socket.on('room:update_settings', (data, callback) => {
+      const found = this.roomManager.getPlayerRoom(socket.id);
+      if (!found) {
+        callback({ success: false, error: 'Not in a room' });
+        return;
+      }
+      if (found.player.id !== found.room.hostId) {
+        callback({ success: false, error: 'Only the host can change settings' });
+        return;
+      }
+
+      const result = this.roomManager.updateSettings(found.room.code, data.settings);
+      if ('error' in result) {
+        callback({ success: false, error: result.error });
+        return;
+      }
+
+      callback({ success: true });
+      this.broadcastRoomUpdate(found.room.code);
+    });
+
     socket.on('game:start', () => {
       const found = this.roomManager.getPlayerRoom(socket.id);
       if (!found) {
@@ -366,6 +387,7 @@ export class SocketHandler {
     this.io.to(roomCode).emit('room:updated', {
       players: room.players,
       hostId: room.hostId,
+      settings: room.settings,
     });
   }
 
@@ -378,6 +400,13 @@ export class SocketHandler {
       if (!player.connected || player.isBot) continue;
       const clientState = serializeForPlayer(state, player.id, room.players);
       this.io.to(player.socketId).emit('game:state', clientState);
+    }
+
+    // Emit challenge reveal event if available
+    const engine = this.roomManager.getEngine(roomCode);
+    if (engine?.lastChallengeReveal) {
+      this.io.to(roomCode).emit('game:challenge_reveal', engine.lastChallengeReveal);
+      engine.lastChallengeReveal = null;
     }
   }
 }
