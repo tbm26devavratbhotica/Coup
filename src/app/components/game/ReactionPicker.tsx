@@ -34,7 +34,7 @@ export function ReactionPicker({ onReact, disabled }: ReactionPickerProps) {
         😄
       </button>
       {open && (
-        <div className="fixed inset-x-0 bottom-0 sm:absolute sm:inset-auto sm:bottom-full sm:right-0 sm:mb-2 z-30 bg-coup-surface border border-gray-600 sm:rounded-xl rounded-t-xl p-3 shadow-xl animate-fade-in">
+        <div className="fixed inset-x-0 bottom-0 sm:absolute sm:inset-auto sm:top-full sm:right-0 sm:mt-2 z-30 bg-coup-surface border border-gray-600 sm:rounded-xl rounded-t-xl p-3 shadow-xl animate-fade-in">
           <div className="grid grid-cols-4 gap-2 max-w-sm mx-auto">
             {REACTIONS.map((r) => (
               <button
