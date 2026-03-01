@@ -6,14 +6,14 @@ Thank you for your interest in contributing to Coup Online! This document provid
 
 ## Reporting Bugs
 
-If you find a bug, please open a GitHub issue with the following information:
+Use the [Bug Report template](https://github.com/8tp/Coup/issues/new?template=bug_report.yml) to file a bug. The template will ask for:
 
-1. **Summary** -- a clear, concise description of the bug
+1. **What happened** -- a clear, concise description of the bug
 2. **Steps to reproduce** -- numbered steps to trigger the issue
-3. **Expected behavior** -- what you expected to happen
-4. **Actual behavior** -- what actually happened
-5. **Environment** -- browser, OS, device type (mobile/desktop), Node.js version
-6. **Screenshots** -- if applicable, include screenshots or screen recordings
+3. **Device and browser** -- dropdown selectors
+4. **Anything else** -- screenshots, room code, number of players, etc.
+
+You can also report bugs directly from the in-app **Settings** modal (gear icon) via the "Report Bug" button.
 
 Please search existing issues before creating a new one to avoid duplicates.
 
@@ -21,12 +21,11 @@ Please search existing issues before creating a new one to avoid duplicates.
 
 ## Suggesting Features
 
-Feature suggestions are welcome! Open a GitHub issue with the label `enhancement` and include:
+Feature suggestions are welcome! Use the [Feedback / Feature Request template](https://github.com/8tp/Coup/issues/new?template=feature_request.yml) or click "Send Feedback" in the in-app **Settings** modal (gear icon). The template asks for:
 
-1. **Problem statement** -- what problem does this feature solve?
-2. **Proposed solution** -- describe the feature and how it would work
-3. **Alternatives considered** -- any other approaches you thought about
-4. **Additional context** -- mockups, links to similar implementations, etc.
+1. **What would you like to see** -- describe your idea or feedback
+2. **Category** -- Gameplay, UI/Design, Bots/AI, Mobile experience, or Other
+3. **Anything else** -- mockups, examples, or additional context
 
 ---
 
@@ -62,12 +61,12 @@ The development server runs at `http://localhost:3000` with hot reloading for bo
 
 ### Project Layout
 
-- `docs/` -- project documentation (CONTRIBUTING.md, PRD.md)
-- `tests/` -- test suite mirroring `src/` structure (`tests/engine/`, `tests/server/`)
+- `docs/` -- project documentation (CONTRIBUTING.md, PRD.md, BOT-STRATEGY.md)
+- `tests/` -- test suite mirroring `src/` structure (`tests/engine/`, `tests/server/`, `tests/app/`)
 - `src/shared/` -- types, constants, and protocol definitions shared between client and server
 - `src/engine/` -- pure game logic with no I/O dependencies (start here if working on rules)
 - `src/server/` -- Socket.io handlers, room management, state serialization
-- `src/app/` -- Next.js App Router pages, components, hooks, and stores
+- `src/app/` -- Next.js App Router pages, components, hooks, stores, utils, and audio
 - `server.ts` -- application entry point wiring Express, Socket.io, and Next.js
 
 ---

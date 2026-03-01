@@ -147,13 +147,17 @@ Coup is a fast-paced (15 min) bluffing / social deduction game for 2–6 players
 - Spectators (watch-only).
 
 ## 8. Implemented Post-MVP Features
-- **AI Bots** — 3 difficulty tiers (Easy/Medium/Hard). Easy plays honestly with no bluffs. Medium bluffs and challenges occasionally. Hard uses card counting, always bluffs Contessa vs assassination, targets leaders strategically. Host adds bots from lobby with a difficulty selector. Up to 5 bots per room.
+- **AI Bots** — 4 difficulty options (Easy/Medium/Hard/Random). Easy plays honestly with no bluffs. Medium bluffs and challenges selectively (~20%/~10%). Hard uses card counting, bluff persistence, honest Contessa blocking, and 3P1L anti-tempo strategy — all tuned against 689,000+ real games from the treason dataset. Random assigns a hidden difficulty at game start. Host adds bots from lobby with a difficulty selector. Up to 5 bots per room.
+- **Bot emotes & personalities** — Each bot has randomized emotiveness (0–1) and meanness (0–1) traits. Bots fire context-aware emoji reactions (GG, LOL, RIP, etc.) based on game events, with bluff-safe filtering to avoid leaking information.
 - **Public/private rooms** — Room browser for public games.
-- **Room settings** — Configurable action timer (10–60s), public/private toggle.
+- **Room settings** — Configurable action timer (10–60s), bot min reaction time slider, public/private toggle.
 - **Chat** — Room-scoped chat in lobby and in-game with rate limiting.
-- **Rematch flow** — Host can restart from game over screen; bots and settings preserved.
-- **Sound effects & reactions** — Audio cues for game events with mute toggle; emoji reactions visible to all players in the room.
+- **Rematch flow** — Host can restart from game over screen; bots, settings, and win counts preserved.
+- **Sound effects & reactions** — Synthesized audio cues (Web Audio API) for 21+ game events with mute toggle; 12 emoji reactions visible to all players in the room.
+- **Haptic feedback** — Vibration on taps for mobile devices with iOS Safari fallback (label+switch checkbox trick). Togglable in settings, on by default.
+- **Settings modal** — Gear icon on home, lobby, and in-game screens. Controls for sound, haptic feedback (touch devices only), text size (Normal/Large/Extra Large), and links to report bugs or send feedback via GitHub issue templates.
 - **Live server stats** — Home page displays real-time "players online" and "games in progress" counters via WebSocket.
+- **Game over awards** — Contextual flavor text and up to 4 post-game awards (Pants on Fire, Eagle Eye, Smooth Operator, etc.) based on actual play patterns.
 
 ## 9. Future Enhancements
 - Reformation expansion.

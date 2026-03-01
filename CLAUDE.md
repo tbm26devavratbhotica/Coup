@@ -91,20 +91,26 @@ Not every turn visits every phase. Income resolves immediately. Coup skips to In
 | `src/engine/Game.ts` | Game model: players, deck, turn order, treasury, action log |
 | `src/engine/Player.ts` | Player model: influences, coins, hasCharacter, revealInfluence |
 | `src/engine/Deck.ts` | Card deck: shuffle (Fisher-Yates), draw, return, reset |
-| `src/engine/BotBrain.ts` | Pure AI decision logic: difficulty-tiered (easy/medium/hard) action/challenge/block choices with card counting |
+| `src/engine/BotBrain.ts` | Pure AI decision logic: difficulty-tiered (easy/medium/hard/random) action/challenge/block choices with card counting and bluff persistence |
 | `src/server/RoomManager.ts` | Room lifecycle: create, join, rejoin, leave, cleanup (24h TTL), chat storage, rematch reset, bot management |
 | `src/server/SocketHandler.ts` | Socket.io event routing: validates context, delegates to engine |
 | `src/server/StateSerializer.ts` | Per-player state filtering before sending to clients |
-| `src/server/BotController.ts` | Bot timing/execution: schedules AI decisions with randomized delays |
+| `src/server/BotController.ts` | Bot timing/execution: schedules AI decisions with randomized delays, triggers bot emotes |
 | `server.ts` | Entry point: wires Express + Socket.io + Next.js |
 | `src/app/page.tsx` | Home screen UI (create/join room) |
 | `src/app/hooks/useSocket.ts` | Socket.io client hook with reconnection and session storage |
-| `src/app/stores/gameStore.ts` | Zustand store: connection, room, game, chat state, error |
+| `src/app/stores/gameStore.ts` | Zustand store: connection, room, game, chat, sound, reactions, error |
+| `src/app/stores/settingsStore.ts` | Zustand store: hapticEnabled, textSize (persisted to localStorage) |
+| `src/app/utils/haptic.ts` | Haptic feedback: vibration API with iOS Safari checkbox-switch fallback |
+| `src/app/audio/SoundEngine.ts` | Web Audio API synthesizer: 21+ sound types, mute toggle |
 | `src/app/components/game/GameTable.tsx` | Main game layout component |
 | `src/app/components/chat/ChatPanel.tsx` | Chat message list + text input |
 | `src/app/components/game/GameCenterTabs.tsx` | Log/Chat tabbed container with unread indicator |
 | `src/app/components/game/GameOverOverlay.tsx` | Game over screen with rematch flow |
-| `src/app/components/lobby/AddBotModal.tsx` | Modal with name input + difficulty selector (Easy/Medium/Hard) for adding bots |
+| `src/app/components/game/ReactionPicker.tsx` | Emoji reaction selector (12 reactions) |
+| `src/app/components/game/ReactionBubble.tsx` | Displays active reaction above a player seat |
+| `src/app/components/settings/SettingsModal.tsx` | Settings: sound, haptic feedback, text size, bug report/feedback links |
+| `src/app/components/lobby/AddBotModal.tsx` | Modal with name input + difficulty selector (Easy/Medium/Hard/Random) for adding bots |
 
 ---
 
@@ -129,13 +135,14 @@ Room-scoped chat works in both lobby and in-game. Messages are stored server-sid
 
 ### Computer Players (Bots)
 
-The host can add 1–5 AI players from the lobby via `bot:add`. Each bot has a difficulty level (`BotDifficulty = 'easy' | 'medium' | 'hard'`):
+The host can add 1–5 AI players from the lobby via `bot:add`. Each bot has a difficulty level (`BotDifficulty = 'easy' | 'medium' | 'hard' | 'random'`):
 
 - **Easy** — Plays honestly (only uses actions it has cards for), never bluffs or challenges, random targeting, random exchange/influence loss choices
-- **Medium** — Occasional bluffs (~30%), challenges (~20%), 50% bluff-Contessa vs assassination, static card value ranking for exchanges/influence loss, 50% chance to target leader
-- **Hard** — Strategic card counting (challenges at 100% when all copies of a character are revealed), always bluffs Contessa vs assassination (mathematically correct), never challenges assassination with 2 influences (too risky), always targets highest-coin player, uses `dynamicCardValue()` for context-aware card ranking, prefers Steal in 1v1, avoids bluffing characters with 2+ copies revealed
+- **Medium** — Selective bluffs (~20%), challenges (~10% base, boosted when holding claimed card or targeted), 30% bluff-Contessa vs assassination, static card value ranking for exchanges/influence loss, 50% chance to target leader
+- **Hard** — Strategic card counting (challenges at 100% when all copies of a character are revealed), selective bluffing (~12% overall, tuned to match real winner data), bluff persistence (3.5x boost for re-claiming established identity), honest Contessa (25%/15% bluff rate), never challenges assassination with 2 influences, always targets highest-coin player, uses `dynamicCardValue()` for context-aware card ranking, prefers Steal in 1v1, 3P1L anti-tempo strategy
+- **Random** — Randomly assigns Easy, Medium, or Hard at game start (difficulty hidden in lobby with `?` badge)
 
-The default difficulty is `'medium'` (defined as `DEFAULT_BOT_DIFFICULTY` in constants). The lobby UI presents three color-coded buttons: Easy (green), Medium (yellow), Hard (red).
+The default difficulty is `'medium'` (defined as `DEFAULT_BOT_DIFFICULTY` in constants). The lobby UI presents four color-coded buttons: Easy (green), Medium (yellow), Hard (red), Random (purple).
 
 Bots are server-side only — they use the same `GameEngine` methods as human players but decisions are made by `BotBrain` (pure logic, no I/O) and scheduled by `BotController` (timing layer with randomized delays: 1.5–3.5s for actions, 0.8–2s for reactions). Only one bot acts at a time; each action triggers a state change which cascades to the next bot.
 
@@ -144,7 +151,8 @@ Key behaviors:
 - When targeted by an action the bot can block with a card it holds (e.g., Contessa vs Assassination), it passes the challenge phase and blocks instead
 - Bots survive rematch (`resetToLobby` preserves them with difficulty preserved), but a bot can never become host
 - State broadcasts skip bots (no socket to send to)
-- Difficulty badges are shown next to the BOT badge in the lobby player list (color-coded: green/yellow/red)
+- Difficulty badges are shown next to the BOT badge in the lobby player list (color-coded: green/yellow/red/purple)
+- Bots fire emoji reactions via personality-driven emote system: each bot has `emotiveness` (0–1) and `meanness` (0–1) traits that determine reaction frequency and tone (nice vs mean reactions). Emotes are context-aware (triggered by game events like eliminations, challenges, blocks) and bluff-safe (~15% chance to skip reactions that could leak information about hidden cards)
 
 ### Rematch Flow
 
