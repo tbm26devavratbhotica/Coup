@@ -1,4 +1,4 @@
-import { ActionType, BotDifficulty, ChallengeRevealEvent, Character, ChatMessage, ClientGameState, PublicRoomInfo, RoomPlayer, RoomSettings } from './types';
+import { ActionType, BotDifficulty, ChallengeRevealEvent, Character, ChatMessage, ClientGameState, PublicRoomInfo, ReactionEvent, RoomPlayer, RoomSettings } from './types';
 
 // ─── Client → Server Events ───
 export interface ClientToServerEvents {
@@ -20,6 +20,9 @@ export interface ClientToServerEvents {
 
   // Chat
   'chat:send': (data: { message: string }) => void;
+
+  // Reactions
+  'reaction:send': (data: { reactionId: string }) => void;
 
   // Rematch
   'game:rematch': () => void;
@@ -50,6 +53,7 @@ export interface ServerToClientEvents {
   'chat:history': (data: { messages: ChatMessage[] }) => void;
   'game:challenge_reveal': (data: ChallengeRevealEvent) => void;
   'game:rematch_to_lobby': () => void;
+  'reaction:fired': (data: ReactionEvent) => void;
   'browser:list': (data: { rooms: PublicRoomInfo[] }) => void;
 }
 

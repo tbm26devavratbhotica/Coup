@@ -5,14 +5,26 @@ import { useRouter } from 'next/navigation';
 import { useSocket } from '../../hooks/useSocket';
 import { useGameStore } from '../../stores/gameStore';
 import { GameTable } from '../../components/game/GameTable';
+import { getSoundEngine } from '../../audio/SoundEngine';
 
 export default function GamePage() {
   const router = useRouter();
-  const { sendChat, rematch } = useSocket();
+  const { sendChat, sendReaction, rematch } = useSocket();
 
   const { gameState, chatMessages, playerId, hostId, error } = useGameStore();
 
   const isHost = playerId === hostId;
+
+  // Unlock AudioContext on first user gesture (required for mobile Safari)
+  useEffect(() => {
+    const unlock = () => getSoundEngine().unlock();
+    document.addEventListener('click', unlock, { once: true });
+    document.addEventListener('touchstart', unlock, { once: true });
+    return () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+    };
+  }, []);
 
   // Redirect when game state is cleared (rematch → lobby) or missing
   useEffect(() => {
@@ -53,6 +65,7 @@ export default function GamePage() {
         gameState={gameState}
         chatMessages={chatMessages}
         onSendChat={sendChat}
+        onSendReaction={sendReaction}
         isHost={isHost}
         onRematch={rematch}
       />

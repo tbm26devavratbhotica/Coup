@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from '../shared/protocol';
 import { GameState, GameStatus } from '../shared/types';
-import { CHAT_MAX_MESSAGE_LENGTH } from '../shared/constants';
+import { CHAT_MAX_MESSAGE_LENGTH, REACTIONS } from '../shared/constants';
 import { RoomManager } from './RoomManager';
 import { serializeForPlayer } from './StateSerializer';
 import { BotController } from './BotController';
@@ -262,6 +262,25 @@ export class SocketHandler {
       }
 
       this.io.to(found.room.code).emit('chat:message', result);
+    });
+
+    // ─── Reactions ───
+
+    socket.on('reaction:send', (data) => {
+      const found = this.roomManager.getPlayerRoom(socket.id);
+      if (!found) return;
+      if (found.player.isBot) return;
+
+      const reactionId = data.reactionId;
+      if (!REACTIONS.some(r => r.id === reactionId)) return;
+
+      if (!this.roomManager.canSendReaction(found.player.id)) return;
+
+      this.io.to(found.room.code).emit('reaction:fired', {
+        playerId: found.player.id,
+        reactionId,
+        timestamp: Date.now(),
+      });
     });
 
     // ─── Rematch ───

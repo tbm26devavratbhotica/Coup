@@ -17,16 +17,24 @@ import { ChallengeRevealOverlay } from './ChallengeRevealOverlay';
 import { PhaseStatus } from './PhaseStatus';
 import { WaitingView } from './WaitingView';
 import { HowToPlay } from '../home/HowToPlay';
+import { ReactionBubble } from './ReactionBubble';
+import { ReactionPicker } from './ReactionPicker';
+import { useSoundEffects } from '../../hooks/useSoundEffects';
+import { useGameStore } from '../../stores/gameStore';
 
 interface GameTableProps {
   gameState: ClientGameState;
   chatMessages: ChatMessage[];
   onSendChat: (message: string) => void;
+  onSendReaction: (reactionId: string) => void;
   isHost: boolean;
   onRematch: () => void;
 }
 
-export function GameTable({ gameState, chatMessages, onSendChat, isHost, onRematch }: GameTableProps) {
+export function GameTable({ gameState, chatMessages, onSendChat, onSendReaction, isHost, onRematch }: GameTableProps) {
+  useSoundEffects();
+  const isMuted = useGameStore(s => s.isMuted);
+  const setMuted = useGameStore(s => s.setMuted);
   const [showRules, setShowRules] = useState(false);
   const me = gameState.players.find(p => p.id === gameState.myId);
   const opponents = gameState.players.filter(p => p.id !== gameState.myId);
@@ -40,6 +48,14 @@ export function GameTable({ gameState, chatMessages, onSendChat, isHost, onRemat
         <span>Turn {gameState.turnNumber}</span>
         <div className="flex items-center gap-2">
           <span>Deck: {gameState.deckCount}</span>
+          <button
+            onClick={() => setMuted(!isMuted)}
+            className="w-5 h-5 rounded-full border border-gray-600 text-gray-400 hover:border-coup-accent hover:text-coup-accent transition text-xs flex items-center justify-center"
+            title={isMuted ? 'Unmute sounds' : 'Mute sounds'}
+          >
+            {isMuted ? '🔇' : '🔊'}
+          </button>
+          <ReactionPicker onReact={onSendReaction} disabled={me ? !me.isAlive : true} />
           <button
             onClick={() => setShowRules(true)}
             className="w-5 h-5 rounded-full border border-gray-600 text-gray-400 hover:border-coup-accent hover:text-coup-accent transition text-xs font-bold flex items-center justify-center"
@@ -58,13 +74,15 @@ export function GameTable({ gameState, chatMessages, onSendChat, isHost, onRemat
       {/* Opponents */}
       <div className={`grid gap-2 mb-3 ${opponents.length <= 2 ? 'grid-cols-2' : opponents.length <= 4 ? 'grid-cols-2' : 'grid-cols-3'}`}>
         {opponents.map(p => (
-          <PlayerSeat
-            key={p.id}
-            player={p}
-            isCurrentTurn={p.id === currentPlayerId}
-            isMe={false}
-            timerExpiry={p.id === currentPlayerId ? gameState.timerExpiry : null}
-          />
+          <div key={p.id} className="relative">
+            <ReactionBubble playerId={p.id} />
+            <PlayerSeat
+              player={p}
+              isCurrentTurn={p.id === currentPlayerId}
+              isMe={false}
+              timerExpiry={p.id === currentPlayerId ? gameState.timerExpiry : null}
+            />
+          </div>
         ))}
       </div>
 
@@ -92,7 +110,9 @@ export function GameTable({ gameState, chatMessages, onSendChat, isHost, onRemat
 
       {/* My hand - pinned to bottom */}
       {me && (
-        <div className={`mt-3 card-container ${!me.isAlive ? 'opacity-50' : 'border-coup-accent/30'}`}>
+        <div className="relative mt-3">
+          <ReactionBubble playerId={me.id} />
+        <div className={`card-container ${!me.isAlive ? 'opacity-50' : 'border-coup-accent/30'}`}>
           <div className="flex items-center justify-between mb-2">
             <span className="font-bold text-coup-accent text-sm">Your Hand</span>
             <span className="flex items-center gap-1 text-coup-gold font-bold text-sm">
@@ -108,6 +128,7 @@ export function GameTable({ gameState, chatMessages, onSendChat, isHost, onRemat
           {!me.isAlive && (
             <p className="text-center text-red-400 text-xs mt-2 font-medium">You have been eliminated</p>
           )}
+        </div>
         </div>
       )}
 
