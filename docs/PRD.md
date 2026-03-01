@@ -152,12 +152,13 @@ Coup is a fast-paced (15 min) bluffing / social deduction game for 2–6 players
 - **Room settings** — Configurable action timer (10–60s), public/private toggle.
 - **Chat** — Room-scoped chat in lobby and in-game with rate limiting.
 - **Rematch flow** — Host can restart from game over screen; bots and settings preserved.
+- **Sound effects & reactions** — Audio cues for game events with mute toggle; emoji reactions visible to all players in the room.
+- **Live server stats** — Home page displays real-time "players online" and "games in progress" counters via WebSocket.
 
 ## 9. Future Enhancements
 - Reformation expansion.
 - Custom card art / themes.
 - Statistics dashboard.
-- Sound effects & music toggle.
 
 ## 10. Implementation Roadmap for Claude
 1. **Phase 1:** Rules engine (pure JS/TS class for Game, Player, Deck, Action resolution).

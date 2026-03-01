@@ -39,7 +39,8 @@ Play Coup with 2–6 friends from any device — no app install, no accounts. Cr
 
 ### Interface
 - **Mobile-first** — portrait-optimized touch UI with 48px+ tap targets
-- **Dark theme** — character-colored cards with role icons
+- **Dark theme** — compact icon-only cards with character-colored borders and hover tooltips
+- **Live activity stats** — players online and games in progress shown on the home page
 - **Phase status banner** — always shows what's happening and what you need to do
 - **Urgency-coded prompts** — red for threats (assassination), gold for decisions, gray for waiting
 - **Action log** — scrollable history of every action, challenge, and block
@@ -185,7 +186,7 @@ Coup/
 | `npm run dev` | Start dev server (Express + Next.js + Socket.io) |
 | `npm run build` | Build for production |
 | `npm start` | Run production build |
-| `npm test` | Run test suite (325 tests across 9 files) |
+| `npm test` | Run test suite (346 tests across 10 files) |
 | `npm run test:watch` | Run tests in watch mode |
 
 ```sh
