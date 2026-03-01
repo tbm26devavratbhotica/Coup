@@ -35,6 +35,15 @@ interface GameStore {
   publicRooms: PublicRoomInfo[];
   setPublicRooms: (rooms: PublicRoomInfo[]) => void;
 
+  // Reactions
+  activeReactions: Map<string, { reactionId: string; timestamp: number }>;
+  setReaction: (playerId: string, reactionId: string, timestamp: number) => void;
+  clearReaction: (playerId: string) => void;
+
+  // Sound
+  isMuted: boolean;
+  setMuted: (muted: boolean) => void;
+
   // Error state
   error: string | null;
   setError: (error: string | null) => void;
@@ -60,6 +69,7 @@ export const useGameStore = create<GameStore>((set) => ({
     gameState: null,
     chatMessages: [],
     challengeReveal: null,
+    activeReactions: new Map(),
   }),
 
   gameState: null,
@@ -74,6 +84,30 @@ export const useGameStore = create<GameStore>((set) => ({
 
   publicRooms: [],
   setPublicRooms: (rooms) => set({ publicRooms: rooms }),
+
+  activeReactions: new Map(),
+  setReaction: (playerId, reactionId, timestamp) => set((s) => {
+    const next = new Map(s.activeReactions);
+    next.set(playerId, { reactionId, timestamp });
+    return { activeReactions: next };
+  }),
+  clearReaction: (playerId) => set((s) => {
+    const next = new Map(s.activeReactions);
+    next.delete(playerId);
+    return { activeReactions: next };
+  }),
+
+  isMuted: typeof window !== 'undefined' && localStorage.getItem('coup_sound_muted') === 'true',
+  setMuted: (muted) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('coup_sound_muted', String(muted));
+    }
+    // Sync to SoundEngine lazily to avoid circular import at module load
+    import('../audio/SoundEngine').then(({ getSoundEngine }) => {
+      getSoundEngine().muted = muted;
+    });
+    set({ isMuted: muted });
+  },
 
   error: null,
   setError: (error) => set({ error }),

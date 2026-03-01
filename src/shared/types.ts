@@ -249,6 +249,13 @@ export interface ChallengeRevealEvent {
   wasGenuine: boolean; // true = challenged player had the card (challenge fails)
 }
 
+// ─── Reactions ───
+export interface ReactionEvent {
+  playerId: string;
+  reactionId: string;
+  timestamp: number;
+}
+
 // ─── Chat ───
 export interface ChatMessage {
   id: string;

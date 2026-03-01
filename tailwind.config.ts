@@ -29,6 +29,7 @@ const config: Config = {
         'challenge-card-in': 'challengeCardIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
         'challenge-card-out': 'challengeCardOut 0.8s ease-in forwards',
         'card-from-deck': 'cardFromDeck 0.6s ease-out forwards',
+        'reaction-pop': 'reactionPop 3s ease-out forwards',
       },
       keyframes: {
         flip: {
@@ -64,6 +65,13 @@ const config: Config = {
         cardFromDeck: {
           '0%': { transform: 'scale(0.3) translate(80px, -120px)', opacity: '0' },
           '100%': { transform: 'scale(1) translate(0, 0)', opacity: '1' },
+        },
+        reactionPop: {
+          '0%': { transform: 'translateX(-50%) scale(0.5)', opacity: '0' },
+          '10%': { transform: 'translateX(-50%) scale(1.15)', opacity: '1' },
+          '20%': { transform: 'translateX(-50%) scale(1)', opacity: '1' },
+          '80%': { transform: 'translateX(-50%) scale(1)', opacity: '1' },
+          '100%': { transform: 'translateX(-50%) scale(0.9)', opacity: '0' },
         },
       },
     },

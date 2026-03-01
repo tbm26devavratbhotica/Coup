@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { BotDifficulty, ChatMessage, GameStatus, PublicRoomInfo, Room, RoomPlayer, RoomSettings } from '../shared/types';
-import { CHAT_MAX_HISTORY, CHAT_MAX_MESSAGE_LENGTH, CHAT_RATE_LIMIT_MS, DEFAULT_ROOM_SETTINGS, DISCONNECT_BOT_REPLACE_MS, MAX_ACTION_TIMER, MAX_PLAYERS, MIN_ACTION_TIMER, MIN_PLAYERS, PUBLIC_ROOM_LIST_MAX } from '../shared/constants';
+import { CHAT_MAX_HISTORY, CHAT_MAX_MESSAGE_LENGTH, CHAT_RATE_LIMIT_MS, DEFAULT_ROOM_SETTINGS, DISCONNECT_BOT_REPLACE_MS, MAX_ACTION_TIMER, MAX_PLAYERS, MIN_ACTION_TIMER, MIN_PLAYERS, PUBLIC_ROOM_LIST_MAX, REACTION_RATE_LIMIT_MS } from '../shared/constants';
 import { GameEngine } from '../engine/GameEngine';
 import { BotController } from './BotController';
 
@@ -12,6 +12,7 @@ export class RoomManager {
   private botControllers: Map<string, BotController> = new Map();
   private chatMessages: Map<string, ChatMessage[]> = new Map();
   private lastChatTime: Map<string, number> = new Map();
+  private lastReactionTime: Map<string, number> = new Map();
   private disconnectTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
   private cleanupInterval: ReturnType<typeof setInterval>;
 
@@ -284,6 +285,16 @@ export class RoomManager {
     }
 
     return chatMsg;
+  }
+
+  canSendReaction(playerId: string): boolean {
+    const now = Date.now();
+    const lastTime = this.lastReactionTime.get(playerId) || 0;
+    if (now - lastTime < REACTION_RATE_LIMIT_MS) {
+      return false;
+    }
+    this.lastReactionTime.set(playerId, now);
+    return true;
   }
 
   getChatHistory(roomCode: string): ChatMessage[] {

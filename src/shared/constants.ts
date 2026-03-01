@@ -40,6 +40,31 @@ export const CHAT_MAX_MESSAGE_LENGTH = 200;
 export const CHAT_RATE_LIMIT_MS = 1000;
 export const CHAT_MAX_HISTORY = 50;
 
+// ─── Reaction Constants ───
+export interface ReactionDefinition {
+  id: string;
+  emoji: string;
+  label: string;
+}
+
+export const REACTIONS: ReactionDefinition[] = [
+  { id: 'gg', emoji: '🤝', label: 'GG' },
+  { id: 'nice_bluff', emoji: '🎭', label: 'Nice bluff!' },
+  { id: 'sus', emoji: '🤨', label: 'Sus...' },
+  { id: 'salty', emoji: '🧂', label: 'Salty' },
+  { id: 'wow', emoji: '😮', label: 'Wow.' },
+  { id: 'lol', emoji: '😂', label: 'LOL' },
+  { id: 'rip', emoji: '⚰️', label: 'RIP' },
+  { id: 'no_way', emoji: '🙅', label: 'No way!' },
+  { id: 'big_brain', emoji: '🧠', label: 'Big brain' },
+  { id: 'sweat', emoji: '😰', label: 'Sweating...' },
+  { id: 'eyes', emoji: '👀', label: 'Watching you' },
+  { id: 'cope', emoji: '🤡', label: 'Cope' },
+];
+
+export const REACTION_RATE_LIMIT_MS = 2000;
+export const REACTION_DISPLAY_MS = 3000;
+
 // ─── Action Definitions ───
 export interface ActionDefinition {
   type: ActionType;
