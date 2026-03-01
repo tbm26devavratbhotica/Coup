@@ -40,7 +40,11 @@ Play Coup with 2–6 friends from any device — no app install, no accounts. Cr
 ### Interface
 - **Mobile-first** — portrait-optimized touch UI with 48px+ tap targets
 - **Dark theme** — compact icon-only cards with character-colored borders and hover tooltips
+- **Haptic feedback** — vibration on taps for mobile devices (with iOS Safari fallback), togglable in settings
+- **Settings modal** — accessible from home, lobby, and in-game via gear icon. Controls for sound, haptic feedback (touch devices only), and text size (Normal / Large / Extra Large)
 - **Live activity stats** — players online and games in progress shown on the home page
+- **Sound effects** — synthesized audio cues for game events (your turn, coup, challenges, etc.) with mute toggle
+- **Emoji reactions** — 12 reactions (GG, LOL, Nice bluff!, RIP, etc.) visible to all players. Bots fire context-aware reactions driven by per-bot personality traits (emotiveness and meanness)
 - **Phase status banner** — always shows what's happening and what you need to do
 - **Urgency-coded prompts** — red for threats (assassination), gold for decisions, gray for waiting
 - **Action log** — scrollable history of every action, challenge, and block
@@ -191,8 +195,12 @@ Coup/
 │       ├── lobby/[roomCode]/       # Lobby: player list, start game
 │       ├── game/[roomCode]/        # Game view
 │       ├── hooks/useSocket.ts      # Socket.io client with auto-reconnect
-│       ├── stores/gameStore.ts     # Zustand store
-│       └── components/             # GameTable, ActionBar, prompts, cards
+│       ├── stores/
+│       │   ├── gameStore.ts        # Zustand store: connection, room, game state
+│       │   └── settingsStore.ts    # Zustand store: text size, haptic preferences
+│       ├── utils/haptic.ts         # Haptic feedback (vibration + iOS fallback)
+│       ├── audio/SoundEngine.ts    # Synthesized sound effects (Web Audio API)
+│       └── components/             # GameTable, ActionBar, prompts, settings, cards
 ```
 
 ## Development
@@ -202,7 +210,7 @@ Coup/
 | `npm run dev` | Start dev server (Express + Next.js + Socket.io) |
 | `npm run build` | Build for production |
 | `npm start` | Run production build |
-| `npm test` | Run test suite (346 tests across 10 files) |
+| `npm test` | Run test suite (350 tests across 11 files) |
 | `npm run test:watch` | Run tests in watch mode |
 
 ```sh
