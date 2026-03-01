@@ -556,6 +556,28 @@ export class BotBrain {
     // a failed challenge costs us what we'd lose anyway, so be more aggressive
     const isDesperateTarget = pendingAction.targetId === botId && bot.aliveInfluenceCount === 1;
 
+    const alivePlayers = game.getAlivePlayers();
+    const aliveCount = alivePlayers.length;
+
+    // 1v1 endgame desperation: if letting this action through means the opponent
+    // reaches 7+ coins (guaranteed coup win) and we can't win on our next turn,
+    // challenging is our only chance to survive
+    if (aliveCount === 2 && bot.aliveInfluenceCount === 1) {
+      const opponent = alivePlayers.find(p => p.id !== botId)!;
+      let opponentCoinsAfter = opponent.coins;
+      if (pendingAction.type === ActionType.Tax) opponentCoinsAfter += 3;
+      else if (pendingAction.type === ActionType.Steal) opponentCoinsAfter += Math.min(2, bot.coins);
+
+      const opponentCanCoupNext = opponentCoinsAfter >= COUP_COST;
+      const canCoupNext = bot.coins >= COUP_COST;
+      const canAssassinateNext = bot.coins >= ASSASSINATE_COST;
+      const canWinNext = canCoupNext || canAssassinateNext;
+
+      if (opponentCanCoupNext && !canWinNext) {
+        return { type: 'challenge' };
+      }
+    }
+
     // If all copies are accounted for, 100% challenge (guaranteed catch)
     if (accountedFor >= CARDS_PER_CHARACTER) {
       return { type: 'challenge' };
@@ -566,7 +588,8 @@ export class BotBrain {
 
     // At 1 influence, be more cautious with challenges (elimination risk)
     // unless we're the target (desperate = nothing to lose)
-    const isNonTarget = pendingAction.targetId !== botId;
+    // In a 1v1 there is no third party, so the non-target penalty doesn't apply
+    const isNonTarget = pendingAction.targetId !== botId && aliveCount > 2;
     // Non-targets with 1 influence should almost never challenge — risking elimination to help someone else
     const cautionMod = (bot.aliveInfluenceCount === 1)
       ? (isDesperateTarget ? 1.0 : isNonTarget ? 0.1 : 0.6)
