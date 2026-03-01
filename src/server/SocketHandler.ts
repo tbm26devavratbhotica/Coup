@@ -11,14 +11,42 @@ type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 export class SocketHandler {
   private io: Server<ClientToServerEvents, ServerToClientEvents>;
   private roomManager: RoomManager;
+  /** Track connection count per IP for accurate unique player count. */
+  private connectionsByIp: Map<string, number> = new Map();
 
   constructor(io: Server<ClientToServerEvents, ServerToClientEvents>, roomManager: RoomManager) {
     this.io = io;
     this.roomManager = roomManager;
   }
 
+  private getSocketIp(socket: TypedSocket): string {
+    // Behind a reverse proxy, use x-forwarded-for; otherwise use the direct address
+    const forwarded = socket.handshake.headers['x-forwarded-for'];
+    if (forwarded) {
+      const first = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0];
+      return first.trim();
+    }
+    return socket.handshake.address;
+  }
+
+  private trackConnection(socket: TypedSocket): void {
+    const ip = this.getSocketIp(socket);
+    this.connectionsByIp.set(ip, (this.connectionsByIp.get(ip) || 0) + 1);
+  }
+
+  private untrackConnection(socket: TypedSocket): void {
+    const ip = this.getSocketIp(socket);
+    const count = (this.connectionsByIp.get(ip) || 1) - 1;
+    if (count <= 0) {
+      this.connectionsByIp.delete(ip);
+    } else {
+      this.connectionsByIp.set(ip, count);
+    }
+  }
+
   handleConnection(socket: TypedSocket): void {
     console.log(`Client connected: ${socket.id}`);
+    this.trackConnection(socket);
     this.broadcastServerStats();
 
     socket.on('room:create', (data, callback) => {
@@ -120,7 +148,7 @@ export class SocketHandler {
       socket.join('browser');
       socket.emit('browser:list', { rooms: this.roomManager.getPublicRooms() });
       socket.emit('server:stats', {
-        playersOnline: this.io.sockets.sockets.size,
+        playersOnline: this.connectionsByIp.size,
         gamesInProgress: this.roomManager.getActiveGameCount(),
       });
     });
@@ -397,6 +425,7 @@ export class SocketHandler {
     });
 
     socket.on('disconnect', () => {
+      this.untrackConnection(socket);
       this.handleDisconnect(socket);
     });
   }
@@ -491,7 +520,7 @@ export class SocketHandler {
 
   private broadcastServerStats(): void {
     this.io.to('browser').emit('server:stats', {
-      playersOnline: this.io.sockets.sockets.size,
+      playersOnline: this.connectionsByIp.size,
       gamesInProgress: this.roomManager.getActiveGameCount(),
     });
   }
