@@ -164,6 +164,8 @@ export class RoomManager {
     }
 
     room.players = room.players.filter(p => p.id !== playerId);
+    this.lastChatTime.delete(playerId);
+    this.lastReactionTime.delete(playerId);
 
     // If room is empty, delete it
     if (room.players.length === 0) {
@@ -481,11 +483,19 @@ export class RoomManager {
     }
   }
 
+  private cleanRateLimitsForRoom(room: Room): void {
+    for (const player of room.players) {
+      this.lastChatTime.delete(player.id);
+      this.lastReactionTime.delete(player.id);
+    }
+  }
+
   private cleanup(): void {
     const now = Date.now();
     for (const [code, room] of this.rooms.entries()) {
       if (now - room.createdAt > ROOM_TTL_MS) {
         this.clearDisconnectTimersForRoom(code);
+        this.cleanRateLimitsForRoom(room);
         this.rooms.delete(code);
         this.engines.delete(code);
         this.chatMessages.delete(code);

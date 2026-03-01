@@ -1,7 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from '../shared/protocol';
-import { GameState, GameStatus, TurnPhase } from '../shared/types';
-import { CHAT_MAX_MESSAGE_LENGTH, REACTIONS } from '../shared/constants';
+import { ActionType, GameState, GameStatus, TurnPhase } from '../shared/types';
+import { REACTIONS } from '../shared/constants';
+import { validateName, validateChatMessage } from './ContentFilter';
 import { RoomManager } from './RoomManager';
 import { serializeForPlayer } from './StateSerializer';
 import { BotController } from './BotController';
@@ -54,14 +55,20 @@ export class SocketHandler {
     this.trackConnection(socket);
     this.broadcastServerStats();
 
+    // Catch-all for any unhandled errors in socket handlers
+    socket.onAny(() => {}); // no-op, just ensures listener setup
+    socket.on('error', (err) => {
+      console.error(`Socket error for ${socket.id}:`, err);
+    });
+
     socket.on('room:create', (data, callback) => {
-      const name = data.playerName?.trim();
-      if (!name || name.length > 20) {
-        callback({ success: false, error: 'Invalid name (1-20 chars)' });
+      const nameResult = validateName(data.playerName);
+      if (!nameResult.valid) {
+        callback({ success: false, error: nameResult.error });
         return;
       }
 
-      const result = this.roomManager.createRoom(name, socket.id, data.isPublic);
+      const result = this.roomManager.createRoom(nameResult.sanitized, socket.id, data.isPublic);
       socket.leave('browser');
       socket.join(result.room.code);
       callback({
@@ -75,10 +82,10 @@ export class SocketHandler {
     });
 
     socket.on('room:join', (data, callback) => {
-      const name = data.playerName?.trim();
+      const nameResult = validateName(data.playerName);
       const code = data.roomCode?.trim().toUpperCase();
-      if (!name || name.length > 20) {
-        callback({ success: false, error: 'Invalid name (1-20 chars)' });
+      if (!nameResult.valid) {
+        callback({ success: false, error: nameResult.error });
         return;
       }
       if (!code) {
@@ -86,7 +93,7 @@ export class SocketHandler {
         return;
       }
 
-      const result = this.roomManager.joinRoom(code, name, socket.id);
+      const result = this.roomManager.joinRoom(code, nameResult.sanitized, socket.id);
       if ('error' in result) {
         callback({ success: false, error: result.error });
         return;
@@ -175,13 +182,13 @@ export class SocketHandler {
         return;
       }
 
-      const name = data.name?.trim();
-      if (!name || name.length > 20) {
-        callback({ success: false, error: 'Invalid name (1-20 chars)' });
+      const nameResult = validateName(data.name);
+      if (!nameResult.valid) {
+        callback({ success: false, error: nameResult.error });
         return;
       }
 
-      const result = this.roomManager.addBot(found.room.code, name, data.difficulty);
+      const result = this.roomManager.addBot(found.room.code, nameResult.sanitized, data.difficulty);
       if ('error' in result) {
         callback({ success: false, error: result.error });
         return;
@@ -300,8 +307,9 @@ export class SocketHandler {
       const found = this.roomManager.getPlayerRoom(socket.id);
       if (!found) return;
 
-      const msg = data.message;
-      if (!msg || typeof msg !== 'string' || msg.trim().length === 0 || msg.length > CHAT_MAX_MESSAGE_LENGTH) {
+      const msgResult = validateChatMessage(data.message);
+      if (!msgResult.valid) {
+        socket.emit('room:error', { message: msgResult.error });
         return;
       }
 
@@ -309,7 +317,7 @@ export class SocketHandler {
         found.room.code,
         found.player.id,
         found.player.name,
-        msg,
+        msgResult.sanitized,
       );
       if ('error' in result) {
         socket.emit('room:error', { message: result.error });
@@ -327,7 +335,8 @@ export class SocketHandler {
       if (found.player.isBot) return;
 
       const reactionId = data.reactionId;
-      if (!REACTIONS.some(r => r.id === reactionId)) return;
+      const reaction = REACTIONS.find(r => r.id === reactionId);
+      if (!reaction) return;
 
       if (!this.roomManager.canSendReaction(found.player.id)) return;
 
@@ -336,6 +345,17 @@ export class SocketHandler {
         reactionId,
         timestamp: Date.now(),
       });
+
+      // Add reaction to chat log (same as bot emotes)
+      const chatMsg = this.roomManager.addChatMessage(
+        found.room.code,
+        found.player.id,
+        found.player.name,
+        `${reaction.emoji} ${reaction.label}`,
+      );
+      if (!('error' in chatMsg)) {
+        this.io.to(found.room.code).emit('chat:message', chatMsg);
+      }
     });
 
     // ─── Rematch ───
@@ -376,6 +396,11 @@ export class SocketHandler {
     socket.on('game:action', (data) => {
       const ctx = this.getGameContext(socket);
       if (!ctx) return;
+
+      if (!data.action || !Object.values(ActionType).includes(data.action as ActionType)) {
+        socket.emit('game:error', { message: 'Invalid action' });
+        return;
+      }
 
       const error = ctx.engine.handleAction(ctx.player.id, data.action, data.targetId);
       if (error) socket.emit('game:error', { message: error });
@@ -433,6 +458,11 @@ export class SocketHandler {
       const ctx = this.getGameContext(socket);
       if (!ctx) return;
 
+      if (typeof data.influenceIndex !== 'number') {
+        socket.emit('game:error', { message: 'Invalid influence index' });
+        return;
+      }
+
       const error = ctx.engine.handleChooseInfluenceLoss(ctx.player.id, data.influenceIndex);
       if (error) socket.emit('game:error', { message: error });
     });
@@ -440,6 +470,11 @@ export class SocketHandler {
     socket.on('game:choose_exchange', (data) => {
       const ctx = this.getGameContext(socket);
       if (!ctx) return;
+
+      if (!Array.isArray(data.keepIndices) || !data.keepIndices.every((i: unknown) => typeof i === 'number')) {
+        socket.emit('game:error', { message: 'Invalid exchange selection' });
+        return;
+      }
 
       const error = ctx.engine.handleChooseExchange(ctx.player.id, data.keepIndices);
       if (error) socket.emit('game:error', { message: error });
@@ -547,7 +582,7 @@ export class SocketHandler {
     if (!room) return;
 
     this.io.to(roomCode).emit('room:updated', {
-      players: room.players,
+      players: room.players.map(({ socketId: _, ...rest }) => rest),
       hostId: room.hostId,
       settings: room.settings,
       lastWinnerId: room.lastWinnerId ?? null,

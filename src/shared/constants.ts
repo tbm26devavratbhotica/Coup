@@ -80,6 +80,9 @@ export const BOT_EMOTE_TRIGGERS: BotEmoteTrigger[] = [
   { eventTypes: ['win'], botRole: 'other', niceReactions: ['gg', 'rip'], meanReactions: ['salty', 'cope'] },
 ];
 
+// ─── Name Constants ───
+export const NAME_MAX_LENGTH = 20;
+
 // ─── Chat Constants ───
 export const CHAT_MAX_MESSAGE_LENGTH = 200;
 export const CHAT_RATE_LIMIT_MS = 1000;
