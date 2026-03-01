@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from '../shared/protocol';
-import { GameState, GameStatus, TurnPhase } from '../shared/types';
+import { ActionType, GameState, GameStatus, TurnPhase } from '../shared/types';
 import { REACTIONS } from '../shared/constants';
 import { validateName, validateChatMessage } from './ContentFilter';
 import { RoomManager } from './RoomManager';
@@ -54,6 +54,12 @@ export class SocketHandler {
     console.log(`Client connected: ${socket.id}`);
     this.trackConnection(socket);
     this.broadcastServerStats();
+
+    // Catch-all for any unhandled errors in socket handlers
+    socket.onAny(() => {}); // no-op, just ensures listener setup
+    socket.on('error', (err) => {
+      console.error(`Socket error for ${socket.id}:`, err);
+    });
 
     socket.on('room:create', (data, callback) => {
       const nameResult = validateName(data.playerName);
@@ -329,7 +335,8 @@ export class SocketHandler {
       if (found.player.isBot) return;
 
       const reactionId = data.reactionId;
-      if (!REACTIONS.some(r => r.id === reactionId)) return;
+      const reaction = REACTIONS.find(r => r.id === reactionId);
+      if (!reaction) return;
 
       if (!this.roomManager.canSendReaction(found.player.id)) return;
 
@@ -338,6 +345,17 @@ export class SocketHandler {
         reactionId,
         timestamp: Date.now(),
       });
+
+      // Add reaction to chat log (same as bot emotes)
+      const chatMsg = this.roomManager.addChatMessage(
+        found.room.code,
+        found.player.id,
+        found.player.name,
+        `${reaction.emoji} ${reaction.label}`,
+      );
+      if (!('error' in chatMsg)) {
+        this.io.to(found.room.code).emit('chat:message', chatMsg);
+      }
     });
 
     // ─── Rematch ───
@@ -378,6 +396,11 @@ export class SocketHandler {
     socket.on('game:action', (data) => {
       const ctx = this.getGameContext(socket);
       if (!ctx) return;
+
+      if (!data.action || !Object.values(ActionType).includes(data.action as ActionType)) {
+        socket.emit('game:error', { message: 'Invalid action' });
+        return;
+      }
 
       const error = ctx.engine.handleAction(ctx.player.id, data.action, data.targetId);
       if (error) socket.emit('game:error', { message: error });
@@ -435,6 +458,11 @@ export class SocketHandler {
       const ctx = this.getGameContext(socket);
       if (!ctx) return;
 
+      if (typeof data.influenceIndex !== 'number') {
+        socket.emit('game:error', { message: 'Invalid influence index' });
+        return;
+      }
+
       const error = ctx.engine.handleChooseInfluenceLoss(ctx.player.id, data.influenceIndex);
       if (error) socket.emit('game:error', { message: error });
     });
@@ -442,6 +470,11 @@ export class SocketHandler {
     socket.on('game:choose_exchange', (data) => {
       const ctx = this.getGameContext(socket);
       if (!ctx) return;
+
+      if (!Array.isArray(data.keepIndices) || !data.keepIndices.every((i: unknown) => typeof i === 'number')) {
+        socket.emit('game:error', { message: 'Invalid exchange selection' });
+        return;
+      }
 
       const error = ctx.engine.handleChooseExchange(ctx.player.id, data.keepIndices);
       if (error) socket.emit('game:error', { message: error });
@@ -549,7 +582,7 @@ export class SocketHandler {
     if (!room) return;
 
     this.io.to(roomCode).emit('room:updated', {
-      players: room.players,
+      players: room.players.map(({ socketId: _, ...rest }) => rest),
       hostId: room.hostId,
       settings: room.settings,
       lastWinnerId: room.lastWinnerId ?? null,

@@ -62,7 +62,11 @@ export default function LobbyPage() {
 
   const copyRoomCode = () => {
     haptic();
-    navigator.clipboard.writeText(roomCode);
+    try {
+      navigator.clipboard.writeText(roomCode);
+    } catch {
+      // Clipboard API not available (HTTP or permission denied)
+    }
   };
 
   const handleAddBot = async (name: string, difficulty: import('@/shared/types').BotDifficulty) => {
