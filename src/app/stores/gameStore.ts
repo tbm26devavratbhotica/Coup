@@ -31,6 +31,11 @@ interface GameStore {
   challengeReveal: ChallengeRevealEvent | null;
   setChallengeReveal: (data: ChallengeRevealEvent | null) => void;
 
+  // Server stats
+  playersOnline: number;
+  gamesInProgress: number;
+  setServerStats: (playersOnline: number, gamesInProgress: number) => void;
+
   // Public rooms (browser)
   publicRooms: PublicRoomInfo[];
   setPublicRooms: (rooms: PublicRoomInfo[]) => void;
@@ -81,6 +86,10 @@ export const useGameStore = create<GameStore>((set) => ({
 
   challengeReveal: null,
   setChallengeReveal: (data) => set({ challengeReveal: data }),
+
+  playersOnline: 0,
+  gamesInProgress: 0,
+  setServerStats: (playersOnline, gamesInProgress) => set({ playersOnline, gamesInProgress }),
 
   publicRooms: [],
   setPublicRooms: (rooms) => set({ publicRooms: rooms }),

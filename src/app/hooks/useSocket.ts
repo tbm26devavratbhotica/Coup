@@ -34,6 +34,7 @@ export function useSocket() {
     setChallengeReveal,
     setPublicRooms,
     setReaction,
+    setServerStats,
     roomCode,
     playerId,
   } = useGameStore();
@@ -110,6 +111,10 @@ export function useSocket() {
       setReaction(data.playerId, data.reactionId, data.timestamp);
     });
 
+    socket.on('server:stats', (data) => {
+      setServerStats(data.playersOnline, data.gamesInProgress);
+    });
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
@@ -123,8 +128,9 @@ export function useSocket() {
       socket.off('game:challenge_reveal');
       socket.off('browser:list');
       socket.off('reaction:fired');
+      socket.off('server:stats');
     };
-  }, [setConnected, setRoomPlayers, setGameState, setError, addChatMessage, setChatHistory, setChallengeReveal, setPublicRooms, setReaction]);
+  }, [setConnected, setRoomPlayers, setGameState, setError, addChatMessage, setChatHistory, setChallengeReveal, setPublicRooms, setReaction, setServerStats]);
 
   const createRoom = useCallback((playerName: string, isPublic?: boolean): Promise<{ roomCode: string; playerId: string }> => {
     return new Promise((resolve, reject) => {

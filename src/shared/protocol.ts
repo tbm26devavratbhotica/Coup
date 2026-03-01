@@ -55,6 +55,7 @@ export interface ServerToClientEvents {
   'game:rematch_to_lobby': () => void;
   'reaction:fired': (data: ReactionEvent) => void;
   'browser:list': (data: { rooms: PublicRoomInfo[] }) => void;
+  'server:stats': (data: { playersOnline: number; gamesInProgress: number }) => void;
 }
 
 // ─── Response Types ───

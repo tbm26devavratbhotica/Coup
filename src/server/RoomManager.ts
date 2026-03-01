@@ -223,6 +223,10 @@ export class RoomManager {
     return result;
   }
 
+  getActiveGameCount(): number {
+    return this.engines.size;
+  }
+
   getRoom(code: string): Room | undefined {
     return this.rooms.get(code.toUpperCase());
   }

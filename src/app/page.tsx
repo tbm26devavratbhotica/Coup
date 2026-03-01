@@ -11,7 +11,7 @@ import { MAX_PLAYERS } from '@/shared/constants';
 export default function Home() {
   const router = useRouter();
   const { createRoom, joinRoom, subscribeToBrowser, unsubscribeFromBrowser } = useSocket();
-  const { error, setError, setRoom, publicRooms } = useGameStore();
+  const { error, setError, setRoom, publicRooms, playersOnline, gamesInProgress } = useGameStore();
   const [mode, setMode] = useState<'idle' | 'create' | 'join' | 'browse'>('idle');
   const [name, setName] = useState('');
   const [roomCode, setRoomCode] = useState('');
@@ -89,7 +89,10 @@ export default function Home() {
 
       <div className="max-w-md w-full text-center relative">
         <CoupLogo className="w-64 h-auto mx-auto mb-2" />
-        <p className="text-gray-400 mb-8">The classic bluffing game</p>
+        <p className="text-gray-400 mb-2">The classic bluffing game</p>
+        <p className="text-gray-500 text-sm mb-8">
+          {playersOnline} player{playersOnline !== 1 ? 's' : ''} online · {gamesInProgress} game{gamesInProgress !== 1 ? 's' : ''} in progress
+        </p>
 
         {error && (
           <div className="bg-red-900/50 border border-red-600 rounded-xl p-3 mb-4 text-sm animate-fade-in">

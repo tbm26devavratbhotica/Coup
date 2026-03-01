@@ -19,6 +19,7 @@ export class SocketHandler {
 
   handleConnection(socket: TypedSocket): void {
     console.log(`Client connected: ${socket.id}`);
+    this.broadcastServerStats();
 
     socket.on('room:create', (data, callback) => {
       const name = data.playerName?.trim();
@@ -118,6 +119,10 @@ export class SocketHandler {
     socket.on('browser:subscribe', () => {
       socket.join('browser');
       socket.emit('browser:list', { rooms: this.roomManager.getPublicRooms() });
+      socket.emit('server:stats', {
+        playersOnline: this.io.engine.clientsCount,
+        gamesInProgress: this.roomManager.getActiveGameCount(),
+      });
     });
 
     socket.on('browser:unsubscribe', () => {
@@ -237,6 +242,7 @@ export class SocketHandler {
       // Trigger initial bot evaluation
       this.roomManager.getBotController(roomCode)?.onStateChange();
       this.maybeBroadcastPublicRoomList(found.room);
+      this.broadcastServerStats();
     });
 
     // ─── Chat ───
@@ -313,6 +319,7 @@ export class SocketHandler {
       this.io.to(room.code).emit('game:rematch_to_lobby');
       this.broadcastRoomUpdate(room.code);
       this.maybeBroadcastPublicRoomList(room);
+      this.broadcastServerStats();
     });
 
     // ─── Game Actions ───
@@ -443,6 +450,7 @@ export class SocketHandler {
       // Room was deleted — still need to update browser
       this.broadcastPublicRoomList();
     }
+    this.broadcastServerStats();
   }
 
   private handleBotReplacement(roomCode: string, playerId: string): void {
@@ -479,6 +487,13 @@ export class SocketHandler {
     if (room.settings.isPublic || wasPublic) {
       this.broadcastPublicRoomList();
     }
+  }
+
+  private broadcastServerStats(): void {
+    this.io.to('browser').emit('server:stats', {
+      playersOnline: this.io.engine.clientsCount,
+      gamesInProgress: this.roomManager.getActiveGameCount(),
+    });
   }
 
   private broadcastGameState(roomCode: string, state: GameState): void {
