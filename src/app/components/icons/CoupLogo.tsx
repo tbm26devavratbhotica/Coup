@@ -28,61 +28,23 @@ export function CoupLogo({ className }: CoupLogoProps) {
         <circle cx="160" cy="69" r="2.5" fill="#475569" />
       </g>
 
-      {/* Letter C */}
+      {/* COUP text — single centered element */}
       <text
-        x="40"
+        x="160"
         y="78"
+        textAnchor="middle"
         fill="#fbbf24"
         fontSize="80"
         fontWeight="900"
         fontFamily="Georgia, 'Times New Roman', serif"
-        letterSpacing="2"
+        letterSpacing="8"
       >
-        C
-      </text>
-
-      {/* Letter O */}
-      <text
-        x="110"
-        y="78"
-        fill="#fbbf24"
-        fontSize="80"
-        fontWeight="900"
-        fontFamily="Georgia, 'Times New Roman', serif"
-        letterSpacing="2"
-      >
-        O
-      </text>
-
-      {/* Letter U */}
-      <text
-        x="185"
-        y="78"
-        fill="#fbbf24"
-        fontSize="80"
-        fontWeight="900"
-        fontFamily="Georgia, 'Times New Roman', serif"
-        letterSpacing="2"
-      >
-        U
-      </text>
-
-      {/* Letter P */}
-      <text
-        x="258"
-        y="78"
-        fill="#fbbf24"
-        fontSize="80"
-        fontWeight="900"
-        fontFamily="Georgia, 'Times New Roman', serif"
-        letterSpacing="2"
-      >
-        P
+        COUP
       </text>
 
       {/* Underline accent */}
       <path
-        d="M30 88h260"
+        d="M25 88h270"
         stroke="#fbbf24"
         strokeWidth="3"
         strokeLinecap="round"
@@ -90,8 +52,8 @@ export function CoupLogo({ className }: CoupLogoProps) {
       />
 
       {/* Decorative dagger tips on sides */}
-      <path d="M20 88l-6-8v8h6z" fill="#fbbf24" opacity="0.4" />
-      <path d="M300 88l6-8v8h-6z" fill="#fbbf24" opacity="0.4" />
+      <path d="M15 88l-6-8v8h6z" fill="#fbbf24" opacity="0.4" />
+      <path d="M305 88l6-8v8h-6z" fill="#fbbf24" opacity="0.4" />
     </svg>
   );
 }
