@@ -144,7 +144,7 @@ export function ActionBar({ gameState }: ActionBarProps) {
           return (
             <button
               key={a.type}
-              className={`bg-coup-surface rounded-lg p-2.5 text-left border border-gray-700
+              className={`bg-coup-surface rounded-lg p-2 text-left border border-gray-700
                 ${disabled ? 'opacity-30 cursor-not-allowed' : 'hover:border-coup-accent cursor-pointer active:scale-[0.97]'}
                 transition-all`}
               onClick={() => !disabled && handleAction(a.type)}

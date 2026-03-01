@@ -172,13 +172,13 @@ function selectAwards(stats: Map<string, PlayerStats>): Award[] {
     });
   }
 
-  // Eagle Eye — best challenge win rate (≥2 challenges)
+  // Eagle Eye — best challenge win rate (≥2 challenges, ≥75% accuracy)
   const eagleEyeCandidates = all.filter(s => s.challengesMade >= 2)
     .map(s => ({ ...s, winRate: s.challengesWon / s.challengesMade }))
-    .sort((a, b) => b.winRate - a.winRate);
+    .filter(s => s.winRate >= 0.75)
+    .sort((a, b) => b.winRate - a.winRate || b.challengesWon - a.challengesWon);
   if (eagleEyeCandidates.length > 0) {
     const e = eagleEyeCandidates[0];
-    const pct = Math.round(e.winRate * 100);
     candidates.push({
       playerId: e.playerId,
       priority: 4,
@@ -186,7 +186,7 @@ function selectAwards(stats: Map<string, PlayerStats>): Award[] {
         emoji: '🦅',
         title: 'Eagle Eye',
         playerName: e.playerName,
-        description: `${pct}% challenge accuracy`,
+        description: `${e.challengesWon}/${e.challengesMade} challenges correct`,
       },
     });
   }

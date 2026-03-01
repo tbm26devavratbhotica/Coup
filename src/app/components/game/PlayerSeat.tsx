@@ -94,10 +94,10 @@ export function PlayerSeat({
         ${!player.isAlive ? 'opacity-40' : ''}
         ${isTarget ? 'ring-2 ring-red-500' : ''}
         ${selectable ? 'cursor-pointer hover:ring-2 hover:ring-coup-accent' : ''}
-        ${isMe ? 'bg-coup-surface' : ''}`}
+        ${isMe ? 'bg-coup-surface' : '!p-2.5'}`}
       onClick={selectable ? onSelect : undefined}
     >
-      <div className="flex items-center justify-between mb-2 gap-1.5">
+      <div className={`flex items-center justify-between gap-1.5 ${isMe ? 'mb-2' : 'mb-1'}`}>
         <div className="flex items-center gap-1 min-w-0">
           <span className={`font-bold text-sm truncate ${isMe ? 'text-coup-accent' : ''}`}>
             {player.name}
@@ -118,7 +118,7 @@ export function PlayerSeat({
 
       <div className="flex gap-2 justify-center">
         {player.influences.map((inf, i) => (
-          <CardFace key={i} influence={inf} size="md" />
+          <CardFace key={i} influence={inf} size={isMe ? "md" : "sm"} />
         ))}
       </div>
 

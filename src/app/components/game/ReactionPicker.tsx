@@ -41,7 +41,7 @@ export function ReactionPicker({ onReact, disabled }: ReactionPickerProps) {
         ref={buttonRef}
         onClick={() => setOpen((o) => !o)}
         disabled={disabled}
-        className="w-5 h-5 rounded-full border border-gray-600 text-gray-400 hover:border-coup-accent hover:text-coup-accent transition text-xs flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-8 h-8 rounded-full border border-gray-600 text-gray-400 hover:border-coup-accent hover:text-coup-accent transition text-xs flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
         title="Send reaction"
       >
         😄

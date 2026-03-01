@@ -50,7 +50,7 @@ export function ActionLog({ log, myName }: ActionLogProps) {
 
   return (
     <div className="px-3 py-2">
-      <div className="space-y-1.5 overflow-y-auto max-h-48">
+      <div className="space-y-1.5 overflow-y-auto max-h-28">
         {log.length === 0 && (
           <p className="text-xs text-gray-600 italic">Game starting...</p>
         )}

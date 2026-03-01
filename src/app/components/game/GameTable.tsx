@@ -46,11 +46,11 @@ export function GameTable({ gameState, chatMessages, onSendChat, onSendReaction,
       <div className="flex items-center justify-between mb-2 text-xs text-gray-500">
         <span>Room: <span className="text-gray-400 font-mono">{gameState.roomCode}</span></span>
         <span>Turn {gameState.turnNumber}</span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <span>Deck: {gameState.deckCount}</span>
           <button
             onClick={() => setMuted(!isMuted)}
-            className="w-5 h-5 rounded-full border border-gray-600 text-gray-400 hover:border-coup-accent hover:text-coup-accent transition text-xs flex items-center justify-center"
+            className="w-8 h-8 rounded-full border border-gray-600 text-gray-400 hover:border-coup-accent hover:text-coup-accent transition text-xs flex items-center justify-center"
             title={isMuted ? 'Unmute sounds' : 'Mute sounds'}
           >
             {isMuted ? '🔇' : '🔊'}
@@ -58,7 +58,7 @@ export function GameTable({ gameState, chatMessages, onSendChat, onSendReaction,
           <ReactionPicker onReact={onSendReaction} disabled={me ? !me.isAlive : true} />
           <button
             onClick={() => setShowRules(true)}
-            className="w-5 h-5 rounded-full border border-gray-600 text-gray-400 hover:border-coup-accent hover:text-coup-accent transition text-xs font-bold flex items-center justify-center"
+            className="w-8 h-8 rounded-full border border-gray-600 text-gray-400 hover:border-coup-accent hover:text-coup-accent transition text-xs font-bold flex items-center justify-center"
             title="How to Play"
           >
             ?
@@ -110,19 +110,19 @@ export function GameTable({ gameState, chatMessages, onSendChat, onSendReaction,
 
       {/* My hand - pinned to bottom */}
       {me && (
-        <div className="relative mt-3">
+        <div className="relative mt-2">
           <ReactionBubble playerId={me.id} />
-        <div className={`card-container ${!me.isAlive ? 'opacity-50' : 'border-coup-accent/30'}`}>
-          <div className="flex items-center justify-between mb-2">
+        <div className={`card-container !px-3 !py-2.5 ${!me.isAlive ? 'opacity-50' : 'border-coup-accent/30'}`}>
+          <div className="flex items-center justify-between mb-1">
             <span className="font-bold text-coup-accent text-sm">Your Hand</span>
             <span className="flex items-center gap-1 text-coup-gold font-bold text-sm">
               <CoinIcon size={16} />
               {me.coins}
             </span>
           </div>
-          <div className="flex gap-3 justify-center">
+          <div className="flex gap-2 justify-center">
             {me.influences.map((inf, i) => (
-              <CardFace key={i} influence={inf} size="lg" />
+              <CardFace key={i} influence={inf} size="md" />
             ))}
           </div>
           {!me.isAlive && (
