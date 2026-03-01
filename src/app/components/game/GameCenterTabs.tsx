@@ -28,7 +28,7 @@ export function GameCenterTabs({ log, chatMessages, myId, myName, onSendChat }: 
   }, [chatMessages.length, activeTab]);
 
   return (
-    <div className="bg-coup-bg/60 rounded-lg border border-gray-800">
+    <div className="flex-1 min-h-0 flex flex-col bg-coup-bg/60 rounded-lg border border-gray-800 overflow-hidden">
       {/* Tab headers */}
       <div className="flex border-b border-gray-800">
         <button
@@ -53,11 +53,13 @@ export function GameCenterTabs({ log, chatMessages, myId, myName, onSendChat }: 
       </div>
 
       {/* Tab content */}
-      {activeTab === 'log' ? (
-        <ActionLog log={log} myName={myName} />
-      ) : (
-        <ChatPanel messages={chatMessages} myId={myId} onSend={onSendChat} />
-      )}
+      <div className="flex-1 min-h-0 flex flex-col">
+        {activeTab === 'log' ? (
+          <ActionLog log={log} myName={myName} />
+        ) : (
+          <ChatPanel messages={chatMessages} myId={myId} onSend={onSendChat} />
+        )}
+      </div>
     </div>
   );
 }

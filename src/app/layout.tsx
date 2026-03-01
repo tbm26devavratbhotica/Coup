@@ -15,6 +15,10 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
     apple: '/coup-logo.png',
   },
   openGraph: {

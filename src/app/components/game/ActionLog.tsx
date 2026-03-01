@@ -50,8 +50,8 @@ export function ActionLog({ log, myName }: ActionLogProps) {
   const turnGroups = groupByTurn(log);
 
   return (
-    <div className="px-3 py-2">
-      <div ref={scrollRef} className="space-y-1.5 overflow-y-auto max-h-28">
+    <div className="px-3 py-2 flex-1 min-h-0 flex flex-col">
+      <div ref={scrollRef} className="space-y-1.5 overflow-y-auto flex-1 min-h-0">
         {log.length === 0 && (
           <p className="text-xs text-gray-600 italic">Game starting...</p>
         )}

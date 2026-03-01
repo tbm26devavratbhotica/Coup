@@ -29,7 +29,7 @@ export function ChatPanel({ messages, myId, onSend }: ChatPanelProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-1 px-3 py-2 min-h-0 max-h-28">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-1 px-3 py-2 min-h-0">
         {messages.length === 0 && (
           <p className="text-xs text-gray-600 italic">No messages yet...</p>
         )}
