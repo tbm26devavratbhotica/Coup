@@ -1,7 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from '../shared/protocol';
 import { GameState, GameStatus, TurnPhase } from '../shared/types';
-import { CHAT_MAX_MESSAGE_LENGTH, REACTIONS } from '../shared/constants';
+import { REACTIONS } from '../shared/constants';
+import { validateName, validateChatMessage } from './ContentFilter';
 import { RoomManager } from './RoomManager';
 import { serializeForPlayer } from './StateSerializer';
 import { BotController } from './BotController';
@@ -55,13 +56,13 @@ export class SocketHandler {
     this.broadcastServerStats();
 
     socket.on('room:create', (data, callback) => {
-      const name = data.playerName?.trim();
-      if (!name || name.length > 20) {
-        callback({ success: false, error: 'Invalid name (1-20 chars)' });
+      const nameResult = validateName(data.playerName);
+      if (!nameResult.valid) {
+        callback({ success: false, error: nameResult.error });
         return;
       }
 
-      const result = this.roomManager.createRoom(name, socket.id, data.isPublic);
+      const result = this.roomManager.createRoom(nameResult.sanitized, socket.id, data.isPublic);
       socket.leave('browser');
       socket.join(result.room.code);
       callback({
@@ -75,10 +76,10 @@ export class SocketHandler {
     });
 
     socket.on('room:join', (data, callback) => {
-      const name = data.playerName?.trim();
+      const nameResult = validateName(data.playerName);
       const code = data.roomCode?.trim().toUpperCase();
-      if (!name || name.length > 20) {
-        callback({ success: false, error: 'Invalid name (1-20 chars)' });
+      if (!nameResult.valid) {
+        callback({ success: false, error: nameResult.error });
         return;
       }
       if (!code) {
@@ -86,7 +87,7 @@ export class SocketHandler {
         return;
       }
 
-      const result = this.roomManager.joinRoom(code, name, socket.id);
+      const result = this.roomManager.joinRoom(code, nameResult.sanitized, socket.id);
       if ('error' in result) {
         callback({ success: false, error: result.error });
         return;
@@ -175,13 +176,13 @@ export class SocketHandler {
         return;
       }
 
-      const name = data.name?.trim();
-      if (!name || name.length > 20) {
-        callback({ success: false, error: 'Invalid name (1-20 chars)' });
+      const nameResult = validateName(data.name);
+      if (!nameResult.valid) {
+        callback({ success: false, error: nameResult.error });
         return;
       }
 
-      const result = this.roomManager.addBot(found.room.code, name, data.difficulty);
+      const result = this.roomManager.addBot(found.room.code, nameResult.sanitized, data.difficulty);
       if ('error' in result) {
         callback({ success: false, error: result.error });
         return;
@@ -300,8 +301,9 @@ export class SocketHandler {
       const found = this.roomManager.getPlayerRoom(socket.id);
       if (!found) return;
 
-      const msg = data.message;
-      if (!msg || typeof msg !== 'string' || msg.trim().length === 0 || msg.length > CHAT_MAX_MESSAGE_LENGTH) {
+      const msgResult = validateChatMessage(data.message);
+      if (!msgResult.valid) {
+        socket.emit('room:error', { message: msgResult.error });
         return;
       }
 
@@ -309,7 +311,7 @@ export class SocketHandler {
         found.room.code,
         found.player.id,
         found.player.name,
-        msg,
+        msgResult.sanitized,
       );
       if ('error' in result) {
         socket.emit('room:error', { message: result.error });
