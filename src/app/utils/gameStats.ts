@@ -303,18 +303,20 @@ function selectAwards(stats: Map<string, PlayerStats>): Award[] {
   return selected;
 }
 
-export function getWinnerFlavorText(gameState: ClientGameState): string {
-  const winnerId = gameState.winnerId;
-  if (!winnerId) return 'Your bluffs were legendary.';
-
+function buildFlavorStats(gameState: ClientGameState) {
   const playerIds = gameState.players.map(p => p.id);
   const playerNames = new Map<string, string>();
   for (const p of gameState.players) {
     playerNames.set(p.id, p.name);
   }
+  return computePlayerStats(gameState.actionLog, playerIds, playerNames);
+}
 
-  const stats = computePlayerStats(gameState.actionLog, playerIds, playerNames);
-  const w = stats.get(winnerId);
+export function getWinnerFlavorText(gameState: ClientGameState): string {
+  const winnerId = gameState.winnerId;
+  if (!winnerId) return 'Your bluffs were legendary.';
+
+  const w = buildFlavorStats(gameState).get(winnerId);
   if (!w) return 'Your bluffs were legendary.';
 
   // Pure Income + Coup — no character claims at all
@@ -368,6 +370,62 @@ export function getWinnerFlavorText(gameState: ClientGameState): string {
   }
 
   return 'Your bluffs were legendary.';
+}
+
+export function getLoserFlavorText(gameState: ClientGameState): string {
+  const myId = gameState.myId;
+  if (!myId) return 'Better luck next time.';
+
+  const stats = buildFlavorStats(gameState);
+  const m = stats.get(myId);
+  if (!m) return 'Better luck next time.';
+
+  // First player eliminated
+  if (m.eliminationOrder === 1) {
+    return 'First out. It happens to the best of us.';
+  }
+
+  // Caught bluffing multiple times
+  if (m.timesCaughtBluffing >= 2) {
+    return 'Your poker face needs some work.';
+  }
+
+  // Caught bluffing once — the fatal bluff
+  if (m.timesCaughtBluffing === 1) {
+    return 'That one bluff cost you everything.';
+  }
+
+  // Bad reads — lost multiple challenges
+  if (m.challengesLost >= 2) {
+    return 'Your reads were a bit off.';
+  }
+
+  // Played it safe with no claims
+  if (m.actionsClaimed === 0) {
+    return "Playing it safe wasn't safe enough.";
+  }
+
+  // Good challenges but still lost
+  if (m.challengesWon >= 2) {
+    return 'Great reads, but it wasn\'t enough.';
+  }
+
+  // Strong defense but still fell
+  if (m.blocksMade >= 2) {
+    return 'You held them off as long as you could.';
+  }
+
+  // Put up a fight with assassinations or coups
+  if (m.assassinationsMade >= 1 || m.coupsMade >= 1) {
+    return 'You fought hard, but fell short.';
+  }
+
+  // Quick game
+  if (gameState.turnNumber <= 6) {
+    return 'It was over before it started.';
+  }
+
+  return 'Better luck next time.';
 }
 
 export function computeAwards(gameState: ClientGameState): Award[] {
