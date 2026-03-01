@@ -236,9 +236,14 @@ export class BotBrain {
       return { type: 'action', action: ActionType.Coup, targetId: this.pickTarget(game, botId, difficulty) };
     }
 
-    // 3P1L endgame coup logic for hard bots
+    // Hard bot endgame coup logic
     let skip3P1LCoup = false;
     if (difficulty === 'hard' && bot.coins >= COUP_COST) {
+      // 1v1 with both at 1 influence — coup is a guaranteed win, always take it
+      if (aliveCount === 2 && alivePlayers.every(p => p.aliveInfluenceCount === 1)) {
+        return { type: 'action', action: ActionType.Coup, targetId: this.pickTarget(game, botId, 'hard') };
+      }
+
       const is3P1L = aliveCount === 3 && alivePlayers.every(p => p.aliveInfluenceCount === 1);
       if (is3P1L) {
         const sortedByCoins = [...alivePlayers].sort((a, b) => b.coins - a.coins);
