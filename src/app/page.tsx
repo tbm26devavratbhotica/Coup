@@ -73,6 +73,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
+      <h1 className="sr-only">Coup Online — Free Multiplayer Bluffing Card Game</h1>
       {/* Decorative background pattern */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"

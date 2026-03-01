@@ -1,6 +1,8 @@
 {
   "name": "coup-online",
   "version": "1.0.0",
+  "description": "Real-time multiplayer web adaptation of the card game Coup",
+  "keywords": ["coup", "card-game", "multiplayer", "board-game", "bluffing"],
   "private": true,
   "scripts": {
     "dev": "tsx server.ts",
