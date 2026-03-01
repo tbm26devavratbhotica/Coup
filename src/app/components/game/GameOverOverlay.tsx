@@ -19,6 +19,7 @@ interface GameOverOverlayProps {
 
 export function GameOverOverlay({ gameState, isHost, onRematch }: GameOverOverlayProps) {
   const challengeReveal = useGameStore(s => s.challengeReveal);
+  const roomPlayers = useGameStore(s => s.roomPlayers);
   const awards = useMemo(() => computeAwards(gameState), [gameState]);
   const winnerFlavor = useMemo(() => getWinnerFlavorText(gameState), [gameState]);
   const loserFlavor = useMemo(() => getLoserFlavorText(gameState), [gameState]);
@@ -59,6 +60,7 @@ export function GameOverOverlay({ gameState, isHost, onRematch }: GameOverOverla
           <div className="bg-coup-bg/60 rounded-xl border border-gray-800 divide-y divide-gray-800">
             {sortedPlayers.map(p => {
               const isWinner = p.id === gameState.winnerId;
+              const wins = roomPlayers.find(rp => rp.id === p.id)?.wins ?? 0;
               return (
                 <div
                   key={p.id}
@@ -71,11 +73,16 @@ export function GameOverOverlay({ gameState, isHost, onRematch }: GameOverOverla
                     {isWinner ? '👑' : !p.isAlive ? '💀' : ''}
                   </span>
 
-                  {/* Name */}
+                  {/* Name + win count */}
                   <span className={`text-sm font-medium flex-1 min-w-0 truncate ${
                     isWinner ? 'text-coup-accent' : p.isAlive ? 'text-gray-300' : 'text-gray-500'
                   }`}>
                     {p.id === gameState.myId ? 'You' : p.name}
+                    {wins > 0 && (
+                      <span className="ml-1.5 text-xs bg-yellow-600 text-white px-1.5 py-0.5 rounded-full font-bold align-middle">
+                        {wins} {wins === 1 ? 'win' : 'wins'}
+                      </span>
+                    )}
                   </span>
 
                   {/* Cards */}

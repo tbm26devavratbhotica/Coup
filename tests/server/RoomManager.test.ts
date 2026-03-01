@@ -499,7 +499,7 @@ describe('RoomManager', () => {
   describe('updateSettings()', () => {
     it('updates action timer to a valid value', () => {
       const { room } = manager.createRoom('Alice', 'socket1');
-      const result = manager.updateSettings(room.code, { actionTimerSeconds: 30, isPublic: false });
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: 30, isPublic: false, botMinReactionSeconds: 2 });
       expect('error' in result).toBe(false);
 
       const updated = manager.getRoom(room.code)!;
@@ -508,7 +508,7 @@ describe('RoomManager', () => {
 
     it('accepts minimum timer value', () => {
       const { room } = manager.createRoom('Alice', 'socket1');
-      const result = manager.updateSettings(room.code, { actionTimerSeconds: MIN_ACTION_TIMER, isPublic: false });
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: MIN_ACTION_TIMER, isPublic: false, botMinReactionSeconds: 2 });
       expect('error' in result).toBe(false);
 
       const updated = manager.getRoom(room.code)!;
@@ -517,7 +517,7 @@ describe('RoomManager', () => {
 
     it('accepts maximum timer value', () => {
       const { room } = manager.createRoom('Alice', 'socket1');
-      const result = manager.updateSettings(room.code, { actionTimerSeconds: MAX_ACTION_TIMER, isPublic: false });
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: MAX_ACTION_TIMER, isPublic: false, botMinReactionSeconds: 2 });
       expect('error' in result).toBe(false);
 
       const updated = manager.getRoom(room.code)!;
@@ -526,7 +526,7 @@ describe('RoomManager', () => {
 
     it('rounds non-integer timer values', () => {
       const { room } = manager.createRoom('Alice', 'socket1');
-      const result = manager.updateSettings(room.code, { actionTimerSeconds: 22.7, isPublic: false });
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: 22.7, isPublic: false, botMinReactionSeconds: 2 });
       expect('error' in result).toBe(false);
 
       const updated = manager.getRoom(room.code)!;
@@ -535,7 +535,7 @@ describe('RoomManager', () => {
 
     it('rejects timer below minimum', () => {
       const { room } = manager.createRoom('Alice', 'socket1');
-      const result = manager.updateSettings(room.code, { actionTimerSeconds: MIN_ACTION_TIMER - 1, isPublic: false });
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: MIN_ACTION_TIMER - 1, isPublic: false, botMinReactionSeconds: 2 });
       expect('error' in result).toBe(true);
       if ('error' in result) {
         expect(result.error).toContain('between');
@@ -544,7 +544,7 @@ describe('RoomManager', () => {
 
     it('rejects timer above maximum', () => {
       const { room } = manager.createRoom('Alice', 'socket1');
-      const result = manager.updateSettings(room.code, { actionTimerSeconds: MAX_ACTION_TIMER + 1, isPublic: false });
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: MAX_ACTION_TIMER + 1, isPublic: false, botMinReactionSeconds: 2 });
       expect('error' in result).toBe(true);
       if ('error' in result) {
         expect(result.error).toContain('between');
@@ -552,7 +552,7 @@ describe('RoomManager', () => {
     });
 
     it('rejects if room not found', () => {
-      const result = manager.updateSettings('ZZZZZZ', { actionTimerSeconds: 30, isPublic: false });
+      const result = manager.updateSettings('ZZZZZZ', { actionTimerSeconds: 30, isPublic: false, botMinReactionSeconds: 2 });
       expect('error' in result).toBe(true);
       if ('error' in result) {
         expect(result.error).toContain('not found');
@@ -564,7 +564,7 @@ describe('RoomManager', () => {
       manager.joinRoom(room.code, 'Bob', 'socket2');
       manager.startGame(room.code);
 
-      const result = manager.updateSettings(room.code, { actionTimerSeconds: 30, isPublic: false });
+      const result = manager.updateSettings(room.code, { actionTimerSeconds: 30, isPublic: false, botMinReactionSeconds: 2 });
       expect('error' in result).toBe(true);
       if ('error' in result) {
         expect(result.error).toContain('during a game');
@@ -573,7 +573,7 @@ describe('RoomManager', () => {
 
     it('is case-insensitive on room code', () => {
       const { room } = manager.createRoom('Alice', 'socket1');
-      const result = manager.updateSettings(room.code.toLowerCase(), { actionTimerSeconds: 30, isPublic: false });
+      const result = manager.updateSettings(room.code.toLowerCase(), { actionTimerSeconds: 30, isPublic: false, botMinReactionSeconds: 2 });
       expect('error' in result).toBe(false);
     });
   });
@@ -583,7 +583,7 @@ describe('RoomManager', () => {
       const { room } = manager.createRoom('Alice', 'socket1');
       manager.joinRoom(room.code, 'Bob', 'socket2');
 
-      manager.updateSettings(room.code, { actionTimerSeconds: 45, isPublic: false });
+      manager.updateSettings(room.code, { actionTimerSeconds: 45, isPublic: false, botMinReactionSeconds: 2 });
       manager.startGame(room.code);
 
       const reset = manager.resetToLobby(room.code);
@@ -596,7 +596,7 @@ describe('RoomManager', () => {
     it('passes custom timer to engine', () => {
       const { room } = manager.createRoom('Alice', 'socket1');
       manager.joinRoom(room.code, 'Bob', 'socket2');
-      manager.updateSettings(room.code, { actionTimerSeconds: 30, isPublic: false });
+      manager.updateSettings(room.code, { actionTimerSeconds: 30, isPublic: false, botMinReactionSeconds: 2 });
 
       const result = manager.startGame(room.code);
       expect('error' in result).toBe(false);
@@ -670,7 +670,7 @@ describe('RoomManager', () => {
       expect(info.hostName).toBe('Alice');
       expect(info.playerCount).toBe(2);
       expect(info.maxPlayers).toBe(MAX_PLAYERS);
-      expect(info.settings).toEqual({ actionTimerSeconds: 15, isPublic: true });
+      expect(info.settings).toEqual({ actionTimerSeconds: 15, isPublic: true, botMinReactionSeconds: 2 });
       expect(info.hasGame).toBe(false);
     });
 
@@ -705,7 +705,7 @@ describe('RoomManager', () => {
       const { room } = manager.createRoom('Alice', 'socket1');
       expect(room.settings.isPublic).toBe(false);
 
-      manager.updateSettings(room.code, { actionTimerSeconds: 15, isPublic: true });
+      manager.updateSettings(room.code, { actionTimerSeconds: 15, isPublic: true, botMinReactionSeconds: 2 });
       const updated = manager.getRoom(room.code)!;
       expect(updated.settings.isPublic).toBe(true);
 
@@ -717,7 +717,7 @@ describe('RoomManager', () => {
       const { room } = manager.createRoom('Alice', 'socket1', true);
       expect(room.settings.isPublic).toBe(true);
 
-      manager.updateSettings(room.code, { actionTimerSeconds: 15, isPublic: false });
+      manager.updateSettings(room.code, { actionTimerSeconds: 15, isPublic: false, botMinReactionSeconds: 2 });
       const updated = manager.getRoom(room.code)!;
       expect(updated.settings.isPublic).toBe(false);
 

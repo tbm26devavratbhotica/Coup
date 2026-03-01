@@ -44,7 +44,7 @@ export interface ClientToServerEvents {
 
 // ─── Server → Client Events ───
 export interface ServerToClientEvents {
-  'room:updated': (data: { players: RoomPlayer[]; hostId: string; settings: RoomSettings }) => void;
+  'room:updated': (data: { players: RoomPlayer[]; hostId: string; settings: RoomSettings; lastWinnerId?: string | null }) => void;
   'room:error': (data: { message: string }) => void;
   'game:state': (state: ClientGameState) => void;
   'game:error': (data: { message: string }) => void;

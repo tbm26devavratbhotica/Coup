@@ -70,7 +70,7 @@ export function useSocket() {
     });
 
     socket.on('room:updated', (data) => {
-      setRoomPlayers(data.players, data.hostId, data.settings);
+      setRoomPlayers(data.players, data.hostId, data.settings, data.lastWinnerId);
     });
 
     socket.on('game:state', (state) => {

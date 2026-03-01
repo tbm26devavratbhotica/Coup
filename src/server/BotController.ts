@@ -9,6 +9,7 @@ import {
   BOT_EMOTE_COOLDOWN_MS,
   BOT_EMOTE_TRIGGERS,
   DEFAULT_BOT_DIFFICULTY,
+  DEFAULT_BOT_MIN_REACTION_SECONDS,
 } from '../shared/constants';
 import { GameEngine } from '../engine/GameEngine';
 import { BotBrain, BotDecision } from '../engine/BotBrain';
@@ -50,9 +51,11 @@ export class BotController {
   private pendingEmoteTimeout: ReturnType<typeof setTimeout> | null = null;
   private onBotEmote: BotEmoteCallback | null = null;
   private destroyed = false;
+  private botMinReactionMs: number;
 
-  constructor(engine: GameEngine, botPlayers: RoomPlayer[]) {
+  constructor(engine: GameEngine, botPlayers: RoomPlayer[], botMinReactionMs?: number) {
     this.engine = engine;
+    this.botMinReactionMs = botMinReactionMs ?? (DEFAULT_BOT_MIN_REACTION_SECONDS * 1000);
     this.bots = botPlayers
       .filter(p => p.isBot)
       .map(p => ({
@@ -180,10 +183,12 @@ export class BotController {
       || decision.type === 'choose_exchange'
       || decision.type === 'choose_influence_loss';
 
-    const min = isActive ? BOT_ACTION_DELAY_MIN : BOT_REACTION_DELAY_MIN;
-    const max = isActive ? BOT_ACTION_DELAY_MAX : BOT_REACTION_DELAY_MAX;
+    const configMin = isActive ? BOT_ACTION_DELAY_MIN : BOT_REACTION_DELAY_MIN;
+    const effectiveMin = Math.max(configMin, this.botMinReactionMs);
+    const configMax = isActive ? BOT_ACTION_DELAY_MAX : BOT_REACTION_DELAY_MAX;
+    const max = Math.max(configMax, effectiveMin);
 
-    return min + Math.random() * (max - min);
+    return effectiveMin + Math.random() * (max - effectiveMin);
   }
 
   private executeDecision(botId: string, decision: BotDecision): void {

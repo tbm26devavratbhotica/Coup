@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useSocket } from '../../hooks/useSocket';
 import { useGameStore } from '../../stores/gameStore';
-import { MIN_PLAYERS, MAX_PLAYERS, MIN_ACTION_TIMER, MAX_ACTION_TIMER } from '@/shared/constants';
+import { MIN_PLAYERS, MAX_PLAYERS, MIN_ACTION_TIMER, MAX_ACTION_TIMER, MIN_BOT_REACTION_SECONDS, MAX_BOT_REACTION_SECONDS } from '@/shared/constants';
 import { GameStatus } from '@/shared/types';
 import { ChatPanel } from '../../components/chat/ChatPanel';
 import { AddBotModal } from '../../components/lobby/AddBotModal';
@@ -19,6 +19,7 @@ export default function LobbyPage() {
     hostId,
     roomPlayers,
     roomSettings,
+    lastWinnerId,
     chatMessages,
     gameState,
     error,
@@ -29,6 +30,8 @@ export default function LobbyPage() {
   const isHost = playerId === hostId;
   const canStart = roomPlayers.length >= MIN_PLAYERS && roomPlayers.length <= MAX_PLAYERS;
   const canAddBot = roomPlayers.length < MAX_PLAYERS;
+  const hasBots = roomPlayers.some(p => p.isBot);
+  const botReactionMax = Math.min(MAX_BOT_REACTION_SECONDS, roomSettings?.actionTimerSeconds ?? MAX_ACTION_TIMER);
 
   // Navigate to game when it starts
   useEffect(() => {
@@ -93,10 +96,20 @@ export default function LobbyPage() {
                 key={p.id}
                 className="flex items-center justify-between py-2 px-3 bg-coup-bg rounded-lg"
               >
-                <span className={`font-medium ${p.id === playerId ? 'text-coup-accent' : ''}`}>
-                  {p.name}
-                  {p.id === playerId && ' (You)'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {p.id === lastWinnerId && (
+                    <span className="text-yellow-400" title="Last game winner">&#128081;</span>
+                  )}
+                  <span className={`font-medium ${p.id === playerId ? 'text-coup-accent' : ''}`}>
+                    {p.name}
+                    {p.id === playerId && ' (You)'}
+                  </span>
+                  {(p.wins ?? 0) > 0 && (
+                    <span className="text-xs bg-yellow-600 text-white px-1.5 py-0.5 rounded-full font-bold">
+                      {p.wins} {p.wins === 1 ? 'win' : 'wins'}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   {p.isBot && (
                     <>
@@ -188,7 +201,9 @@ export default function LobbyPage() {
                 step={5}
                 value={roomSettings.actionTimerSeconds}
                 onChange={(e) => {
-                  updateRoomSettings({ ...roomSettings, actionTimerSeconds: Number(e.target.value) });
+                  const newTimer = Number(e.target.value);
+                  const clampedBotReaction = Math.min(roomSettings.botMinReactionSeconds, newTimer);
+                  updateRoomSettings({ ...roomSettings, actionTimerSeconds: newTimer, botMinReactionSeconds: clampedBotReaction });
                 }}
                 className="w-full mt-2 accent-coup-accent"
               />
@@ -204,6 +219,41 @@ export default function LobbyPage() {
               <span>{MIN_ACTION_TIMER}s</span>
               <span>{MAX_ACTION_TIMER}s</span>
             </div>
+
+            {/* Bot Min Reaction Time */}
+            {hasBots && (
+              <>
+                <div className="flex items-center justify-between mt-4">
+                  <label className="text-sm text-gray-300">Bot Min Reaction</label>
+                  <span className="text-sm font-mono text-coup-accent">{roomSettings.botMinReactionSeconds}s</span>
+                </div>
+                {isHost ? (
+                  <input
+                    type="range"
+                    min={MIN_BOT_REACTION_SECONDS}
+                    max={botReactionMax}
+                    step={0.5}
+                    value={roomSettings.botMinReactionSeconds}
+                    onChange={(e) => {
+                      updateRoomSettings({ ...roomSettings, botMinReactionSeconds: Number(e.target.value) });
+                    }}
+                    className="w-full mt-2 accent-coup-accent"
+                  />
+                ) : (
+                  <div className="w-full bg-coup-bg rounded-full h-2 mt-2">
+                    <div
+                      className="bg-coup-accent/40 h-2 rounded-full"
+                      style={{ width: `${((roomSettings.botMinReactionSeconds - MIN_BOT_REACTION_SECONDS) / (botReactionMax - MIN_BOT_REACTION_SECONDS)) * 100}%` }}
+                    />
+                  </div>
+                )}
+                <div className="flex justify-between text-xs text-gray-600 mt-1">
+                  <span>{MIN_BOT_REACTION_SECONDS}s</span>
+                  <span>{botReactionMax}s</span>
+                </div>
+                <p className="text-xs text-gray-600 mt-1">Minimum time before bots react</p>
+              </>
+            )}
           </div>
         )}
 

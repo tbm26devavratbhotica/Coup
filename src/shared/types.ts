@@ -213,6 +213,7 @@ export interface Room {
   gameState: GameState | null;
   createdAt: number;
   settings: RoomSettings;
+  lastWinnerId?: string | null;
 }
 
 export interface RoomPlayer {
@@ -223,12 +224,14 @@ export interface RoomPlayer {
   isBot?: boolean;
   difficulty?: BotDifficulty;
   replacedByBot?: boolean;
+  wins?: number;
 }
 
 // ─── Room Settings ───
 export interface RoomSettings {
   actionTimerSeconds: number;
   isPublic: boolean;
+  botMinReactionSeconds: number;
 }
 
 // ─── Public Room Info (for room browser) ───

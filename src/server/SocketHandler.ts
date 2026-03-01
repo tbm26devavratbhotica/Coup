@@ -261,7 +261,8 @@ export class SocketHandler {
       // Create BotController if there are bots in the room
       const botPlayers = found.room.players.filter(p => p.isBot);
       if (botPlayers.length > 0) {
-        const botController = new BotController(engine, botPlayers);
+        const botMinReactionMs = (found.room.settings.botMinReactionSeconds ?? 2) * 1000;
+        const botController = new BotController(engine, botPlayers, botMinReactionMs);
         this.roomManager.setBotController(roomCode, botController);
         this.wireBotEmoteCallback(roomCode, botController);
       }
@@ -535,6 +536,7 @@ export class SocketHandler {
       players: room.players,
       hostId: room.hostId,
       settings: room.settings,
+      lastWinnerId: room.lastWinnerId ?? null,
     });
   }
 

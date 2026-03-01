@@ -14,8 +14,9 @@ interface GameStore {
   hostId: string | null;
   roomPlayers: RoomPlayer[];
   roomSettings: RoomSettings | null;
+  lastWinnerId: string | null;
   setRoom: (roomCode: string, playerId: string) => void;
-  setRoomPlayers: (players: RoomPlayer[], hostId: string, settings: RoomSettings) => void;
+  setRoomPlayers: (players: RoomPlayer[], hostId: string, settings: RoomSettings, lastWinnerId?: string | null) => void;
   clearRoom: () => void;
 
   // Game state
@@ -63,14 +64,16 @@ export const useGameStore = create<GameStore>((set) => ({
   hostId: null,
   roomPlayers: [],
   roomSettings: null,
+  lastWinnerId: null,
   setRoom: (roomCode, playerId) => set({ roomCode, playerId }),
-  setRoomPlayers: (players, hostId, settings) => set({ roomPlayers: players, hostId, roomSettings: settings }),
+  setRoomPlayers: (players, hostId, settings, lastWinnerId) => set({ roomPlayers: players, hostId, roomSettings: settings, lastWinnerId: lastWinnerId ?? null }),
   clearRoom: () => set({
     roomCode: null,
     playerId: null,
     hostId: null,
     roomPlayers: [],
     roomSettings: null,
+    lastWinnerId: null,
     gameState: null,
     chatMessages: [],
     challengeReveal: null,

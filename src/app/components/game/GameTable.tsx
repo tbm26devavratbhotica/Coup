@@ -94,6 +94,7 @@ export function GameTable({ gameState, chatMessages, onSendChat, onSendReaction,
           myId={gameState.myId}
           myName={me?.name ?? ''}
           onSendChat={onSendChat}
+          turnPhase={gameState.turnPhase}
         />
 
         {/* Interactive prompts - only one shows at a time */}
