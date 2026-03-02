@@ -733,7 +733,7 @@ export class BotBrain {
 
     // Hard/medium bot at 1 influence being assassinated without Contessa:
     // prefer passing challenge to bluff-block Contessa in block phase,
-    // unless card counting gives a guaranteed catch.
+    // unless card counting gives a guaranteed catch or Contessa bluff isn't viable.
     // Challenging risks instant death if wrong; bluff-blocking Contessa gives
     // a chance to survive if the opponent doesn't call the bluff.
     if (pendingAction.type === ActionType.Assassinate && pendingAction.targetId === botId
@@ -745,6 +745,18 @@ export class BotBrain {
       // Only challenge if all copies are accounted for (guaranteed catch)
       if (accountedFor >= CARDS_PER_CHARACTER) {
         return { type: 'challenge' };
+      }
+      // Check if Contessa bluff is viable — if all Contessas are revealed,
+      // bluff-blocking is guaranteed to be caught, so challenge the Assassin instead
+      const revealedContessas = revealed.get(Character.Contessa) || 0;
+      if (revealedContessas >= CARDS_PER_CHARACTER) {
+        return { type: 'challenge' };
+      }
+      // Hard bot: if 2+ Contessas revealed, bluff is very risky — prefer challenging
+      if (difficulty === 'hard' && revealedContessas >= 2) {
+        if (Math.random() < 0.7) {
+          return { type: 'challenge' };
+        }
       }
       // Otherwise pass — will bluff-block with Contessa in the block phase
       return { type: 'pass_challenge' };
@@ -934,8 +946,15 @@ export class BotBrain {
 
         if (difficulty === 'medium') {
           if (isTarget && blockChar === Character.Contessa && pendingAction.type === ActionType.Assassinate) {
-            // At 1 influence, not blocking = guaranteed death. Always bluff Contessa.
             if (bot.aliveInfluenceCount === 1) {
+              // Check if Contessa bluff is viable based on revealed cards
+              const revealed = this.countRevealedCharacters(game);
+              const revealedContessas = revealed.get(Character.Contessa) || 0;
+              if (revealedContessas >= CARDS_PER_CHARACTER) {
+                // All Contessas revealed — bluff is guaranteed to be caught
+                continue;
+              }
+              // Bluff Contessa — it's our only chance to survive
               return { type: 'block', character: blockChar };
             }
             // With 2 influences, 30% bluff Contessa vs assassination
@@ -955,9 +974,13 @@ export class BotBrain {
         const revealedCount = revealed.get(blockChar) || 0;
 
         if (isTarget && blockChar === Character.Contessa && pendingAction.type === ActionType.Assassinate) {
-          // At 1 influence, not blocking = guaranteed death. Always bluff Contessa.
-          // The opponent may not challenge, giving us a chance to survive.
           if (bot.aliveInfluenceCount === 1) {
+            // Check if Contessa bluff is viable based on card counting
+            if (revealedCount >= CARDS_PER_CHARACTER) {
+              // All Contessas revealed — bluff is guaranteed to be caught
+              continue;
+            }
+            // Bluff Contessa — opponent may not challenge
             return { type: 'block', character: blockChar };
           }
           // With 2 influences, bluff occasionally but not as a default strategy.

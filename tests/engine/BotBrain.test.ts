@@ -619,7 +619,59 @@ describe('BotBrain', () => {
       expect(blockCount).toBeLessThan(100);
     });
 
-    it('hard bot ALWAYS bluff-blocks Contessa when at 1 influence vs assassination', () => {
+    it('hard bot does NOT bluff Contessa when all 3 Contessas are revealed', () => {
+      const game = createGame();
+      game.turnPhase = TurnPhase.AwaitingBlock;
+      setCards(game, 'p2', [Character.Duke, Character.Captain]);
+      revealCard(game, 'p2', 0); // 1 influence
+
+      // Reveal all 3 Contessas on other players
+      setCards(game, 'p1', [Character.Contessa, Character.Contessa]);
+      revealCard(game, 'p1', 0);
+      revealCard(game, 'p1', 1);
+      setCards(game, 'p3', [Character.Contessa, Character.Duke]);
+      revealCard(game, 'p3', 0);
+
+      const pendingAction: PendingAction = {
+        type: ActionType.Assassinate,
+        actorId: 'p1',
+        targetId: 'p2',
+        claimedCharacter: Character.Assassin,
+      };
+
+      for (let i = 0; i < 100; i++) {
+        const result = decide(game, 'p2', 'hard', { pendingAction, blockPassedPlayerIds: [] });
+        expect(result!.type).toBe('pass_block');
+      }
+    });
+
+    it('medium bot does NOT bluff Contessa when all 3 Contessas are revealed', () => {
+      const game = createGame();
+      game.turnPhase = TurnPhase.AwaitingBlock;
+      setCards(game, 'p2', [Character.Duke, Character.Captain]);
+      revealCard(game, 'p2', 0); // 1 influence
+
+      // Reveal all 3 Contessas on other players
+      setCards(game, 'p1', [Character.Contessa, Character.Contessa]);
+      revealCard(game, 'p1', 0);
+      revealCard(game, 'p1', 1);
+      setCards(game, 'p3', [Character.Contessa, Character.Duke]);
+      revealCard(game, 'p3', 0);
+
+      const pendingAction: PendingAction = {
+        type: ActionType.Assassinate,
+        actorId: 'p1',
+        targetId: 'p2',
+        claimedCharacter: Character.Assassin,
+      };
+
+      for (let i = 0; i < 100; i++) {
+        const result = decide(game, 'p2', 'medium', { pendingAction, blockPassedPlayerIds: [] });
+        expect(result!.type).toBe('pass_block');
+      }
+    });
+
+    it('hard bot bluff-blocks Contessa when at 1 influence vs assassination (no Contessas revealed)', () => {
       const game = createGame();
       game.turnPhase = TurnPhase.AwaitingBlock;
       setCards(game, 'p2', [Character.Duke, Character.Captain]);
@@ -641,7 +693,7 @@ describe('BotBrain', () => {
       }
     });
 
-    it('medium bot ALWAYS bluff-blocks Contessa when at 1 influence vs assassination', () => {
+    it('medium bot bluff-blocks Contessa when at 1 influence vs assassination (no Contessas revealed)', () => {
       const game = createGame();
       game.turnPhase = TurnPhase.AwaitingBlock;
       setCards(game, 'p2', [Character.Duke, Character.Captain]);
@@ -686,6 +738,107 @@ describe('BotBrain', () => {
         const result = decide(game, 'p2', 'hard', { pendingAction, challengeState: cs });
         expect(result!.type).toBe('pass_challenge');
       }
+    });
+
+    it('hard bot at 1 influence challenges assassination when all Contessas are revealed (bluff not viable)', () => {
+      const game = createGame();
+      game.turnPhase = TurnPhase.AwaitingActionChallenge;
+      setCards(game, 'p2', [Character.Duke, Character.Captain]);
+      revealCard(game, 'p2', 0); // 1 influence
+
+      // Reveal all 3 Contessas — bluff-blocking Contessa is not viable
+      setCards(game, 'p1', [Character.Contessa, Character.Contessa]);
+      revealCard(game, 'p1', 0);
+      revealCard(game, 'p1', 1);
+      setCards(game, 'p3', [Character.Contessa, Character.Duke]);
+      revealCard(game, 'p3', 0);
+
+      const pendingAction: PendingAction = {
+        type: ActionType.Assassinate,
+        actorId: 'p1',
+        targetId: 'p2',
+        claimedCharacter: Character.Assassin,
+      };
+      const cs: ChallengeState = {
+        challengerId: '',
+        challengedPlayerId: 'p1',
+        claimedCharacter: Character.Assassin,
+        passedPlayerIds: ['p1'],
+      };
+
+      // Should always challenge since Contessa bluff would be caught
+      for (let i = 0; i < 100; i++) {
+        const result = decide(game, 'p2', 'hard', { pendingAction, challengeState: cs });
+        expect(result!.type).toBe('challenge');
+      }
+    });
+
+    it('medium bot at 1 influence challenges assassination when all Contessas are revealed (bluff not viable)', () => {
+      const game = createGame();
+      game.turnPhase = TurnPhase.AwaitingActionChallenge;
+      setCards(game, 'p2', [Character.Duke, Character.Captain]);
+      revealCard(game, 'p2', 0); // 1 influence
+
+      // Reveal all 3 Contessas
+      setCards(game, 'p1', [Character.Contessa, Character.Contessa]);
+      revealCard(game, 'p1', 0);
+      revealCard(game, 'p1', 1);
+      setCards(game, 'p3', [Character.Contessa, Character.Duke]);
+      revealCard(game, 'p3', 0);
+
+      const pendingAction: PendingAction = {
+        type: ActionType.Assassinate,
+        actorId: 'p1',
+        targetId: 'p2',
+        claimedCharacter: Character.Assassin,
+      };
+      const cs: ChallengeState = {
+        challengerId: '',
+        challengedPlayerId: 'p1',
+        claimedCharacter: Character.Assassin,
+        passedPlayerIds: ['p1'],
+      };
+
+      // Should always challenge since Contessa bluff would be caught
+      for (let i = 0; i < 100; i++) {
+        const result = decide(game, 'p2', 'medium', { pendingAction, challengeState: cs });
+        expect(result!.type).toBe('challenge');
+      }
+    });
+
+    it('hard bot at 1 influence prefers challenging assassination when 2 Contessas revealed', () => {
+      const game = createGame();
+      game.turnPhase = TurnPhase.AwaitingActionChallenge;
+      setCards(game, 'p2', [Character.Duke, Character.Captain]);
+      revealCard(game, 'p2', 0); // 1 influence
+
+      // Reveal 2 Contessas — bluff is risky
+      setCards(game, 'p1', [Character.Contessa, Character.Contessa]);
+      revealCard(game, 'p1', 0);
+      revealCard(game, 'p1', 1);
+
+      const pendingAction: PendingAction = {
+        type: ActionType.Assassinate,
+        actorId: 'p1',
+        targetId: 'p2',
+        claimedCharacter: Character.Assassin,
+      };
+      const cs: ChallengeState = {
+        challengerId: '',
+        challengedPlayerId: 'p1',
+        claimedCharacter: Character.Assassin,
+        passedPlayerIds: ['p1'],
+      };
+
+      // Hard bot should challenge ~70% of the time when 2 Contessas revealed
+      let challengeCount = 0;
+      for (let i = 0; i < 500; i++) {
+        const result = decide(game, 'p2', 'hard', { pendingAction, challengeState: cs });
+        if (result!.type === 'challenge') challengeCount++;
+      }
+      // ~70% challenge rate, allow tolerance
+      expect(challengeCount).toBeGreaterThan(250);
+      expect(challengeCount).toBeLessThan(450);
     });
 
     it('hard bot at 1 influence challenges assassination when all Assassin copies accounted for', () => {
