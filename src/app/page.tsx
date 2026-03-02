@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSocket } from './hooks/useSocket';
 import { useGameStore } from './stores/gameStore';
 import { CoupLogo } from './components/icons';
@@ -12,11 +12,13 @@ import { haptic } from './utils/haptic';
 
 export default function Home() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { createRoom, joinRoom, subscribeToBrowser, unsubscribeFromBrowser } = useSocket();
   const { error, setError, setRoom, publicRooms, playersOnline, gamesInProgress } = useGameStore();
-  const [mode, setMode] = useState<'idle' | 'create' | 'join' | 'browse'>('idle');
+  const joinCode = searchParams.get('join');
+  const [mode, setMode] = useState<'idle' | 'create' | 'join' | 'browse'>(joinCode ? 'join' : 'idle');
   const [name, setName] = useState('');
-  const [roomCode, setRoomCode] = useState('');
+  const [roomCode, setRoomCode] = useState(joinCode ?? '');
   const [loading, setLoading] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);

@@ -49,11 +49,11 @@ export default function LobbyPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!useGameStore.getState().playerId) {
-        router.replace('/');
+        router.replace(`/?join=${roomCode}`);
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [playerId, router]);
+  }, [playerId, roomCode, router]);
 
   const handleLeave = () => {
     haptic();
