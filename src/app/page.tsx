@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSocket } from './hooks/useSocket';
 import { useGameStore } from './stores/gameStore';
@@ -11,6 +11,14 @@ import { MAX_PLAYERS } from '@/shared/constants';
 import { haptic } from './utils/haptic';
 
 export default function Home() {
+  return (
+    <Suspense>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { createRoom, joinRoom, subscribeToBrowser, unsubscribeFromBrowser } = useSocket();
