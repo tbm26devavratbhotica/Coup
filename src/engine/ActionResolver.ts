@@ -239,17 +239,19 @@ export class ActionResolver {
         actorName: challenged.name,
       });
 
-      // Challenged player gets a replacement card
-      const newCard = game.deck.draw();
-      if (newCard) {
-        sideEffects.push({
-          type: 'replace_influence',
-          playerId: challenged.id,
-          oldCharacter: claimedChar,
-          newCharacter: newCard,
-        });
+      // Challenged player gets a replacement card (skip if this challenge ends the game)
+      const isGameEnding = challenger.aliveInfluenceCount === 1 && game.getAlivePlayers().length === 2;
+      if (!isGameEnding) {
+        const newCard = game.deck.draw();
+        if (newCard) {
+          sideEffects.push({
+            type: 'replace_influence',
+            playerId: challenged.id,
+            oldCharacter: claimedChar,
+            newCharacter: newCard,
+          });
+        }
       }
-      // Return the revealed card to deck and shuffle (handled in replace_influence effect)
 
       // Challenger must lose an influence
       if (challenger.aliveInfluenceCount === 1) {
@@ -486,15 +488,18 @@ export class ActionResolver {
         actorName: blocker.name,
       });
 
-      // Blocker gets replacement
-      const newCard = game.deck.draw();
-      if (newCard) {
-        sideEffects.push({
-          type: 'replace_influence',
-          playerId: blocker.id,
-          oldCharacter: claimedChar,
-          newCharacter: newCard,
-        });
+      // Blocker gets replacement (skip if this challenge ends the game)
+      const isGameEnding = challenger.aliveInfluenceCount === 1 && game.getAlivePlayers().length === 2;
+      if (!isGameEnding) {
+        const newCard = game.deck.draw();
+        if (newCard) {
+          sideEffects.push({
+            type: 'replace_influence',
+            playerId: blocker.id,
+            oldCharacter: claimedChar,
+            newCharacter: newCard,
+          });
+        }
       }
 
       // No cost refund — per official rules, a counteracted action's cost remains spent
