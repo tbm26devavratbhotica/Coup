@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Character, ClientInfluence } from '@/shared/types';
 import { CHARACTER_DESCRIPTIONS } from '@/shared/constants';
 import { CHARACTER_SVG_ICONS, CardBack } from '../icons';
+import { useGameStore } from '../../stores/gameStore';
 
 const characterColors: Record<Character, string> = {
   [Character.Duke]: 'border-purple-500 bg-purple-900/40',
@@ -24,7 +26,7 @@ function CardPreviewModal({ character, onClose }: { character: Character; onClos
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" onClick={onClose}>
       <div
         className={`rounded-2xl border-2 p-6 flex flex-col items-center gap-3 max-w-[200px] w-full
@@ -43,7 +45,8 @@ function CardPreviewModal({ character, onClose }: { character: Character; onClos
           Close
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -61,6 +64,15 @@ export function CardFace({ influence, size = 'md', onClick, selected, disablePre
   const sizeClass = `card-face-${size}`;
   const iconPx = iconPixelSizes[size];
 
+  // Auto-close preview when game state changes (phase transitions, etc.)
+  // This prevents the modal from blocking game interactions
+  const turnPhase = useGameStore(s => s.gameState?.turnPhase);
+  useEffect(() => {
+    setShowPreview(false);
+  }, [turnPhase]);
+
+  const closePreview = useCallback(() => setShowPreview(false), []);
+
   // Cards with a known character but no external onClick get click-to-preview
   const canPreview = !disablePreview && !onClick && !!influence.character;
 
@@ -76,7 +88,7 @@ export function CardFace({ influence, size = 'md', onClick, selected, disablePre
         >
           <Icon size={iconPx} />
         </div>
-        {showPreview && <CardPreviewModal character={influence.character} onClose={() => setShowPreview(false)} />}
+        {showPreview && <CardPreviewModal character={influence.character} onClose={closePreview} />}
       </>
     );
   }
@@ -95,7 +107,7 @@ export function CardFace({ influence, size = 'md', onClick, selected, disablePre
         >
           <Icon size={iconPx} />
         </div>
-        {showPreview && <CardPreviewModal character={influence.character} onClose={() => setShowPreview(false)} />}
+        {showPreview && <CardPreviewModal character={influence.character} onClose={closePreview} />}
       </>
     );
   }
