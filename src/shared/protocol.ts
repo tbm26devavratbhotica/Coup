@@ -39,7 +39,7 @@ export interface ClientToServerEvents {
   'browser:unsubscribe': () => void;
 
   // Reconnection
-  'room:rejoin': (data: { roomCode: string; playerId: string }, callback: (response: RoomResponse) => void) => void;
+  'room:rejoin': (data: { roomCode: string; playerId: string; sessionToken?: string }, callback: (response: RoomResponse) => void) => void;
 }
 
 // ─── Server → Client Events ───
@@ -63,5 +63,6 @@ export interface RoomResponse {
   success: boolean;
   roomCode?: string;
   playerId?: string;
+  sessionToken?: string;
   error?: string;
 }

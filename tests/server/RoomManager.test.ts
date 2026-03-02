@@ -100,11 +100,11 @@ describe('RoomManager', () => {
 
   describe('rejoinRoom()', () => {
     it('reconnects a player with new socket', () => {
-      const { room, playerId } = manager.createRoom('Alice', 'socket1');
+      const { room, playerId, sessionToken } = manager.createRoom('Alice', 'socket1');
       // Mark disconnected
       room.players[0].connected = false;
 
-      const result = manager.rejoinRoom(room.code, playerId, 'socket_new');
+      const result = manager.rejoinRoom(room.code, playerId, 'socket_new', sessionToken);
       expect('error' in result).toBe(false);
       if ('error' in result) return;
 
