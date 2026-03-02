@@ -84,32 +84,30 @@ export default function LobbyPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 relative">
-      {/* Top-right buttons */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-        <button
-          onClick={() => { haptic(); setShowQRModal(true); }}
-          className="w-9 h-9 rounded-full bg-gray-800 border border-gray-600 text-gray-300 hover:border-coup-accent hover:text-coup-accent transition flex items-center justify-center"
-          title="Share Room"
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="w-4.5 h-4.5">
-            <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-          </svg>
-        </button>
-        <button
-          onClick={() => { haptic(); setShowSettings(true); }}
-          className="w-9 h-9 rounded-full bg-gray-800 border border-gray-600 text-gray-300 hover:border-coup-accent hover:text-coup-accent transition flex items-center justify-center"
-          title="Settings"
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="w-4.5 h-4.5">
-            <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-          </svg>
-        </button>
-      </div>
-
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-6">
       <div className="max-w-md w-full">
-        {/* Room Code */}
-        <div className="text-center mb-8">
+        {/* Top buttons + Room Code */}
+        <div className="text-center mb-8 relative">
+          <div className="flex justify-end gap-2 mb-3">
+            <button
+              onClick={() => { haptic(); setShowQRModal(true); }}
+              className="w-9 h-9 rounded-full bg-gray-800 border border-gray-600 text-gray-300 hover:border-coup-accent hover:text-coup-accent transition flex items-center justify-center"
+              title="Share Room"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4.5 h-4.5">
+                <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => { haptic(); setShowSettings(true); }}
+              className="w-9 h-9 rounded-full bg-gray-800 border border-gray-600 text-gray-300 hover:border-coup-accent hover:text-coup-accent transition flex items-center justify-center"
+              title="Settings"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4.5 h-4.5">
+                <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
           <p className="text-gray-400 text-sm mb-1">Room Code</p>
           <button
             className="text-4xl font-bold tracking-widest text-coup-accent hover:opacity-80 transition"
