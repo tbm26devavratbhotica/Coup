@@ -46,7 +46,8 @@ export function useSocket() {
       socket.connect();
     }
 
-    socket.on('connect', () => {
+    // Use named handlers so cleanup only removes THIS component's listeners
+    const onConnect = () => {
       setConnected(true);
 
       // Attempt rejoin if we have room data
@@ -57,7 +58,10 @@ export function useSocket() {
           roomCode: storedRoom,
           playerId: storedPlayer,
         }, (response) => {
-          if (!response.success) {
+          if (response.success) {
+            // Restore store state from sessionStorage after reconnection
+            useGameStore.getState().setRoom(storedRoom, storedPlayer);
+          } else {
             sessionStorage.removeItem('coup_room');
             sessionStorage.removeItem('coup_player');
             useGameStore.getState().clearRoom();
@@ -65,72 +69,86 @@ export function useSocket() {
           }
         });
       }
-    });
+    };
 
-    socket.on('disconnect', () => {
+    const onDisconnect = () => {
       setConnected(false);
-    });
+    };
 
-    socket.on('room:updated', (data) => {
+    const onRoomUpdatedRaw = (data: { players: any; hostId: string; settings: any; lastWinnerId?: string | null }) => {
       setRoomPlayers(data.players, data.hostId, data.settings, data.lastWinnerId);
-    });
+    };
 
-    socket.on('game:state', (state) => {
+    const onGameState = (state: any) => {
       setGameState(state);
-    });
+    };
 
-    socket.on('game:error', (data) => {
+    const onGameError = (data: { message: string }) => {
       setError(data.message);
       setTimeout(() => setError(null), 3000);
-    });
+    };
 
-    socket.on('room:error', (data) => {
+    const onRoomError = (data: { message: string }) => {
       setError(data.message);
       setTimeout(() => setError(null), 3000);
-    });
+    };
 
-    socket.on('chat:message', (data) => {
+    const onChatMessage = (data: any) => {
       addChatMessage(data);
-    });
+    };
 
-    socket.on('chat:history', (data) => {
+    const onChatHistory = (data: { messages: any[] }) => {
       setChatHistory(data.messages);
-    });
+    };
 
-    socket.on('game:rematch_to_lobby', () => {
+    const onRematchToLobby = () => {
       setGameState(null);
-    });
+    };
 
-    socket.on('game:challenge_reveal', (data) => {
+    const onChallengeReveal = (data: any) => {
       setChallengeReveal(data);
-    });
+    };
 
-    socket.on('browser:list', (data) => {
+    const onBrowserList = (data: { rooms: any[] }) => {
       setPublicRooms(data.rooms);
-    });
+    };
 
-    socket.on('reaction:fired', (data) => {
+    const onReactionFired = (data: { playerId: string; reactionId: string; timestamp: number }) => {
       setReaction(data.playerId, data.reactionId, data.timestamp);
-    });
+    };
 
-    socket.on('server:stats', (data) => {
+    const onServerStats = (data: { playersOnline: number; gamesInProgress: number }) => {
       setServerStats(data.playersOnline, data.gamesInProgress);
-    });
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('room:updated', onRoomUpdatedRaw);
+    socket.on('game:state', onGameState);
+    socket.on('game:error', onGameError);
+    socket.on('room:error', onRoomError);
+    socket.on('chat:message', onChatMessage);
+    socket.on('chat:history', onChatHistory);
+    socket.on('game:rematch_to_lobby', onRematchToLobby);
+    socket.on('game:challenge_reveal', onChallengeReveal);
+    socket.on('browser:list', onBrowserList);
+    socket.on('reaction:fired', onReactionFired);
+    socket.on('server:stats', onServerStats);
 
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
-      socket.off('room:updated');
-      socket.off('game:state');
-      socket.off('game:error');
-      socket.off('room:error');
-      socket.off('chat:message');
-      socket.off('chat:history');
-      socket.off('game:rematch_to_lobby');
-      socket.off('game:challenge_reveal');
-      socket.off('browser:list');
-      socket.off('reaction:fired');
-      socket.off('server:stats');
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('room:updated', onRoomUpdatedRaw);
+      socket.off('game:state', onGameState);
+      socket.off('game:error', onGameError);
+      socket.off('room:error', onRoomError);
+      socket.off('chat:message', onChatMessage);
+      socket.off('chat:history', onChatHistory);
+      socket.off('game:rematch_to_lobby', onRematchToLobby);
+      socket.off('game:challenge_reveal', onChallengeReveal);
+      socket.off('browser:list', onBrowserList);
+      socket.off('reaction:fired', onReactionFired);
+      socket.off('server:stats', onServerStats);
     };
   }, [setConnected, setRoomPlayers, setGameState, setError, addChatMessage, setChatHistory, setChallengeReveal, setPublicRooms, setReaction, setServerStats]);
 
