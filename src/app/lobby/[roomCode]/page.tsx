@@ -89,7 +89,7 @@ export default function LobbyPage() {
       <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
         <button
           onClick={() => { haptic(); setShowQRModal(true); }}
-          className="w-9 h-9 rounded-full border border-gray-600 text-gray-400 hover:border-coup-accent hover:text-coup-accent transition flex items-center justify-center"
+          className="w-9 h-9 rounded-full bg-gray-800 border border-gray-600 text-gray-300 hover:border-coup-accent hover:text-coup-accent transition flex items-center justify-center"
           title="Share Room"
         >
           <svg viewBox="0 0 20 20" fill="currentColor" className="w-4.5 h-4.5">
@@ -98,7 +98,7 @@ export default function LobbyPage() {
         </button>
         <button
           onClick={() => { haptic(); setShowSettings(true); }}
-          className="w-9 h-9 rounded-full border border-gray-600 text-gray-400 hover:border-coup-accent hover:text-coup-accent transition flex items-center justify-center"
+          className="w-9 h-9 rounded-full bg-gray-800 border border-gray-600 text-gray-300 hover:border-coup-accent hover:text-coup-accent transition flex items-center justify-center"
           title="Settings"
         >
           <svg viewBox="0 0 20 20" fill="currentColor" className="w-4.5 h-4.5">
