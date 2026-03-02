@@ -258,6 +258,8 @@ export interface RoomPlayer {
   personality?: BotPersonality;
   replacedByBot?: boolean;
   wins?: number;
+  /** Server-only session token for rejoin authentication (never serialized to clients) */
+  sessionToken?: string;
 }
 
 export type ClientRoomPlayer = Omit<RoomPlayer, 'socketId'>;

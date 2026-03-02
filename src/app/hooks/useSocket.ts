@@ -53,10 +53,12 @@ export function useSocket() {
       // Attempt rejoin if we have room data
       const storedRoom = sessionStorage.getItem('coup_room');
       const storedPlayer = sessionStorage.getItem('coup_player');
+      const storedToken = sessionStorage.getItem('coup_session_token');
       if (storedRoom && storedPlayer) {
         socket.emit('room:rejoin', {
           roomCode: storedRoom,
           playerId: storedPlayer,
+          sessionToken: storedToken ?? undefined,
         }, (response) => {
           if (response.success) {
             // Restore store state from sessionStorage after reconnection
@@ -64,6 +66,7 @@ export function useSocket() {
           } else {
             sessionStorage.removeItem('coup_room');
             sessionStorage.removeItem('coup_player');
+            sessionStorage.removeItem('coup_session_token');
             useGameStore.getState().clearRoom();
             useGameStore.getState().setGameState(null);
           }
@@ -158,6 +161,9 @@ export function useSocket() {
         if (response.success && response.roomCode && response.playerId) {
           sessionStorage.setItem('coup_room', response.roomCode);
           sessionStorage.setItem('coup_player', response.playerId);
+          if (response.sessionToken) {
+            sessionStorage.setItem('coup_session_token', response.sessionToken);
+          }
           resolve({ roomCode: response.roomCode, playerId: response.playerId });
         } else {
           reject(new Error(response.error || 'Failed to create room'));
@@ -172,6 +178,9 @@ export function useSocket() {
         if (response.success && response.roomCode && response.playerId) {
           sessionStorage.setItem('coup_room', response.roomCode);
           sessionStorage.setItem('coup_player', response.playerId);
+          if (response.sessionToken) {
+            sessionStorage.setItem('coup_session_token', response.sessionToken);
+          }
           resolve({ roomCode: response.roomCode, playerId: response.playerId });
         } else {
           reject(new Error(response.error || 'Failed to join room'));
@@ -188,6 +197,7 @@ export function useSocket() {
     socketRef.current.emit('room:leave');
     sessionStorage.removeItem('coup_room');
     sessionStorage.removeItem('coup_player');
+    sessionStorage.removeItem('coup_session_token');
   }, []);
 
   const sendChat = useCallback((message: string) => {

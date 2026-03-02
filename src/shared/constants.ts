@@ -117,6 +117,12 @@ export const REACTIONS: ReactionDefinition[] = [
 export const REACTION_RATE_LIMIT_MS = 2000;
 export const REACTION_DISPLAY_MS = 3000;
 
+// ─── Socket Rate Limits ───
+export const RATE_LIMIT_ROOM_CREATE_MS = 3000;
+export const RATE_LIMIT_ROOM_JOIN_MS = 2000;
+export const RATE_LIMIT_GAME_ACTION_MS = 500;
+export const RATE_LIMIT_BOT_ADD_MS = 1000;
+
 // ─── Action Definitions ───
 export interface ActionDefinition {
   type: ActionType;
