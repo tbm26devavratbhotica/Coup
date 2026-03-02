@@ -2,7 +2,13 @@
   "name": "coup-online",
   "version": "1.0.0",
   "description": "Real-time multiplayer web adaptation of the card game Coup",
-  "keywords": ["coup", "card-game", "multiplayer", "board-game", "bluffing"],
+  "keywords": [
+    "coup",
+    "card-game",
+    "multiplayer",
+    "board-game",
+    "bluffing"
+  ],
   "private": true,
   "scripts": {
     "dev": "tsx server.ts",
@@ -14,12 +20,13 @@
   "dependencies": {
     "express": "^4.21.0",
     "next": "^15.1.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "socket.io": "^4.8.0",
     "socket.io-client": "^4.8.0",
-    "zustand": "^5.0.0",
-    "uuid": "^11.0.0"
+    "uuid": "^11.0.0",
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",

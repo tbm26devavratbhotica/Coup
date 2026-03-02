@@ -1106,4 +1106,84 @@ describe('ActionResolver', () => {
       expect(revealIdx).toBeLessThan(logIdx);
     });
   });
+
+  // ──────────────────────────────────────────────────
+  // Skip card replacement on game-ending challenge
+  // ──────────────────────────────────────────────────
+
+  describe('skip card replacement on game-ending challenge', () => {
+    it('action challenge — game-ending: no replace_influence when challenger has 1 influence and only 2 alive', () => {
+      // Eliminate p3 so only p1 and p2 are alive
+      const p3 = game.getPlayer('p3')!;
+      p3.influences[0].revealed = true;
+      p3.influences[1].revealed = true;
+
+      // p1 has Duke (truthful claim), p2 has 1 alive influence
+      setCards(game, 'p1', [Character.Duke, Character.Contessa]);
+      const p2 = game.getPlayer('p2')!;
+      p2.influences[0].revealed = true; // only 1 alive influence left
+
+      const declareResult = resolver.declareAction(game, 'p1', ActionType.Tax);
+      if (isError(declareResult)) return;
+
+      const result = resolver.challenge(
+        game, 'p2', declareResult.pendingAction!, declareResult.challengeState!,
+      );
+      expect(isError(result)).toBe(false);
+      if (isError(result)) return;
+
+      const replaceEffect = result.sideEffects.find(e => e.type === 'replace_influence');
+      expect(replaceEffect).toBeUndefined();
+    });
+
+    it('action challenge — non-game-ending: replace_influence present when 3 players alive', () => {
+      // All 3 players alive, p2 has 1 influence
+      setCards(game, 'p1', [Character.Duke, Character.Contessa]);
+      const p2 = game.getPlayer('p2')!;
+      p2.influences[0].revealed = true; // only 1 alive influence left
+
+      const declareResult = resolver.declareAction(game, 'p1', ActionType.Tax);
+      if (isError(declareResult)) return;
+
+      const result = resolver.challenge(
+        game, 'p2', declareResult.pendingAction!, declareResult.challengeState!,
+      );
+      expect(isError(result)).toBe(false);
+      if (isError(result)) return;
+
+      const replaceEffect = result.sideEffects.find(e => e.type === 'replace_influence');
+      expect(replaceEffect).toBeDefined();
+    });
+
+    it('block challenge — game-ending: no replace_influence when challenger has 1 influence and only 2 alive', () => {
+      // Eliminate p3 so only p1 and p2 are alive
+      const p3 = game.getPlayer('p3')!;
+      p3.influences[0].revealed = true;
+      p3.influences[1].revealed = true;
+
+      // p1 (actor/challenger of block) has 1 alive influence
+      const p1 = game.getPlayer('p1')!;
+      p1.influences[0].revealed = true;
+
+      // p2 has Duke (will block Foreign Aid truthfully)
+      setCards(game, 'p2', [Character.Duke, Character.Assassin]);
+
+      const declareResult = resolver.declareAction(game, 'p1', ActionType.ForeignAid);
+      if (isError(declareResult)) return;
+
+      game.turnPhase = TurnPhase.AwaitingBlock;
+      const blockResult = resolver.block(game, 'p2', Character.Duke, declareResult.pendingAction!);
+      if (isError(blockResult)) return;
+
+      game.turnPhase = TurnPhase.AwaitingBlockChallenge;
+      const result = resolver.challengeBlock(
+        game, 'p1', declareResult.pendingAction!, blockResult.pendingBlock!, blockResult.challengeState!,
+      );
+      expect(isError(result)).toBe(false);
+      if (isError(result)) return;
+
+      const replaceEffect = result.sideEffects.find(e => e.type === 'replace_influence');
+      expect(replaceEffect).toBeUndefined();
+    });
+  });
 });

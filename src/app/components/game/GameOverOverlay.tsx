@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ClientGameState, ClientInfluence, TurnPhase } from '@/shared/types';
 import { useGameStore } from '../../stores/gameStore';
 import { computeAwards, getWinnerFlavorText, getLoserFlavorText } from '../../utils/gameStats';
 import { haptic } from '../../utils/haptic';
 import { CardFace } from './CardFace';
+import { ActionLog } from './ActionLog';
 
 function ResultCard({ influence }: { influence: ClientInfluence }) {
   if (!influence.character) return null;
@@ -19,6 +20,7 @@ interface GameOverOverlayProps {
 }
 
 export function GameOverOverlay({ gameState, isHost, onRematch }: GameOverOverlayProps) {
+  const [showLog, setShowLog] = useState(false);
   const challengeReveal = useGameStore(s => s.challengeReveal);
   const roomPlayers = useGameStore(s => s.roomPlayers);
   const awards = useMemo(() => computeAwards(gameState), [gameState]);
@@ -115,6 +117,25 @@ export function GameOverOverlay({ gameState, isHost, onRematch }: GameOverOverla
             </div>
           </div>
         )}
+
+        {/* Game Log */}
+        <div className="px-4 pb-4">
+          <button
+            className="w-full text-xs text-gray-400 hover:text-gray-200 transition-colors py-1"
+            onClick={() => setShowLog(v => !v)}
+          >
+            {showLog ? 'Hide Log' : 'Show Log'}
+          </button>
+          {showLog && (
+            <div className="mt-2 max-h-60 overflow-y-auto bg-coup-bg/60 rounded-xl border border-gray-800">
+              <ActionLog
+                log={gameState.log}
+                myName={gameState.players.find(p => p.id === gameState.myId)?.name ?? ''}
+                turnPhase={gameState.turnPhase}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Action */}
         <div className="px-6 pb-6">
