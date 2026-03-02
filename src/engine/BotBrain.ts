@@ -944,17 +944,16 @@ export class BotBrain {
           continue;
         }
 
+        // Never bluff a character when all copies are publicly revealed — guaranteed to be caught
+        const revealed = this.countRevealedCharacters(game);
+        const revealedCount = revealed.get(blockChar) || 0;
+        if (revealedCount >= CARDS_PER_CHARACTER) continue;
+
         if (difficulty === 'medium') {
           if (isTarget && blockChar === Character.Contessa && pendingAction.type === ActionType.Assassinate) {
             if (bot.aliveInfluenceCount === 1) {
-              // Check if Contessa bluff is viable based on revealed cards
-              const revealed = this.countRevealedCharacters(game);
-              const revealedContessas = revealed.get(Character.Contessa) || 0;
-              if (revealedContessas >= CARDS_PER_CHARACTER) {
-                // All Contessas revealed — bluff is guaranteed to be caught
-                continue;
-              }
               // Bluff Contessa — it's our only chance to survive
+              // (all-revealed case already handled by general guard above)
               return { type: 'block', character: blockChar };
             }
             // With 2 influences, 30% bluff Contessa vs assassination
@@ -970,17 +969,10 @@ export class BotBrain {
         }
 
         // Hard: strategic bluff blocking
-        const revealed = this.countRevealedCharacters(game);
-        const revealedCount = revealed.get(blockChar) || 0;
-
         if (isTarget && blockChar === Character.Contessa && pendingAction.type === ActionType.Assassinate) {
           if (bot.aliveInfluenceCount === 1) {
-            // Check if Contessa bluff is viable based on card counting
-            if (revealedCount >= CARDS_PER_CHARACTER) {
-              // All Contessas revealed — bluff is guaranteed to be caught
-              continue;
-            }
             // Bluff Contessa — opponent may not challenge
+            // (all-revealed case already handled by general guard above)
             return { type: 'block', character: blockChar };
           }
           // With 2 influences, bluff occasionally but not as a default strategy.

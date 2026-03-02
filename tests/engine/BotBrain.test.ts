@@ -888,6 +888,7 @@ describe('BotBrain', () => {
       const result = decide(game, 'p3', 'hard', { pendingAction, blockPassedPlayerIds: [] });
       expect(result!.type).toBe('pass_block');
     });
+
   });
 
   // ─── Block Challenge Decisions ───
