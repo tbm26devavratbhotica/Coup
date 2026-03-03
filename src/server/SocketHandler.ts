@@ -689,7 +689,7 @@ export class SocketHandler {
     if (!room) return;
 
     this.io.to(roomCode).emit('room:updated', {
-      players: room.players.map(({ socketId: _, ...rest }) => rest),
+      players: room.players.map(({ socketId: _, sessionToken: __, ...rest }) => rest),
       hostId: room.hostId,
       settings: room.settings,
       lastWinnerId: room.lastWinnerId ?? null,

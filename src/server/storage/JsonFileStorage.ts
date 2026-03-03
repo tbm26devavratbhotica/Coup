@@ -16,9 +16,17 @@ export class JsonFileStorage implements GameLogStorage {
     await fs.mkdir(this.dir, { recursive: true });
   }
 
+  private safePath(filename: string): string {
+    const filePath = path.resolve(this.dir, filename);
+    if (!filePath.startsWith(path.resolve(this.dir))) {
+      throw new Error('Invalid file path');
+    }
+    return filePath;
+  }
+
   async saveGameLog(log: GameLog): Promise<void> {
     await this.ensureDir();
-    const filePath = path.join(this.dir, `${log.gameId}.json`);
+    const filePath = this.safePath(`${log.gameId}.json`);
     await fs.writeFile(filePath, JSON.stringify(log, null, 2));
   }
 
@@ -35,7 +43,7 @@ export class JsonFileStorage implements GameLogStorage {
   }
 
   async getGameLog(gameId: string): Promise<GameLog | null> {
-    const filePath = path.join(this.dir, `${gameId}.json`);
+    const filePath = this.safePath(`${gameId}.json`);
     try {
       const data = await fs.readFile(filePath, 'utf-8');
       return JSON.parse(data);

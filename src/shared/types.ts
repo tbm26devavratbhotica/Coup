@@ -264,7 +264,7 @@ export interface RoomPlayer {
   sessionToken?: string;
 }
 
-export type ClientRoomPlayer = Omit<RoomPlayer, 'socketId'>;
+export type ClientRoomPlayer = Omit<RoomPlayer, 'socketId' | 'sessionToken'>;
 
 // ─── Room Settings ───
 export interface RoomSettings {
