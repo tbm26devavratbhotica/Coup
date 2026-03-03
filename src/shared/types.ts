@@ -148,6 +148,8 @@ export interface LogEntry {
   actorName: string | null;
   /** The player targeted by this action (steal, assassinate, coup), if any. */
   targetId?: string | null;
+  /** Whether this claim was a bluff (actor did not hold the claimed character). Only set on claim_action/block entries. */
+  wasBluff?: boolean;
 }
 
 // ─── Client-visible state (what gets sent to each player) ───
@@ -262,7 +264,7 @@ export interface RoomPlayer {
   sessionToken?: string;
 }
 
-export type ClientRoomPlayer = Omit<RoomPlayer, 'socketId'>;
+export type ClientRoomPlayer = Omit<RoomPlayer, 'socketId' | 'sessionToken'>;
 
 // ─── Room Settings ───
 export interface RoomSettings {

@@ -1,6 +1,6 @@
 import { LogEntry, ClientGameState } from '@/shared/types';
 
-interface PlayerStats {
+export interface PlayerStats {
   playerId: string;
   playerName: string;
   challengesMade: number;
@@ -12,6 +12,7 @@ interface PlayerStats {
   coupsMade: number;
   assassinationsMade: number;
   actionsClaimed: number;
+  actualBluffs: number;
   eliminationOrder: number; // 0 = not eliminated, 1 = first out, etc.
 }
 
@@ -22,7 +23,7 @@ export interface Award {
   description: string;
 }
 
-function computePlayerStats(log: LogEntry[], playerIds: string[], playerNames: Map<string, string>): Map<string, PlayerStats> {
+export function computePlayerStats(log: LogEntry[], playerIds: string[], playerNames: Map<string, string>): Map<string, PlayerStats> {
   const stats = new Map<string, PlayerStats>();
 
   for (const id of playerIds) {
@@ -38,6 +39,7 @@ function computePlayerStats(log: LogEntry[], playerIds: string[], playerNames: M
       coupsMade: 0,
       assassinationsMade: 0,
       actionsClaimed: 0,
+      actualBluffs: 0,
       eliminationOrder: 0,
     });
   }
@@ -54,6 +56,7 @@ function computePlayerStats(log: LogEntry[], playerIds: string[], playerNames: M
     switch (entry.eventType) {
       case 'claim_action':
         s.actionsClaimed++;
+        if (entry.wasBluff) s.actualBluffs++;
         break;
       case 'challenge':
       case 'block_challenge':
@@ -102,6 +105,7 @@ function computePlayerStats(log: LogEntry[], playerIds: string[], playerNames: M
         break;
       case 'block':
         s.blocksMade++;
+        if (entry.wasBluff) s.actualBluffs++;
         break;
       case 'coup':
         s.coupsMade++;
