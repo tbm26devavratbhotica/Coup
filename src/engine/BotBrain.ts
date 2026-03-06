@@ -649,34 +649,64 @@ export class BotBrain {
     // ─── Reformation-specific actions ───
     if (game.gameMode === 'Reformation') {
       // Embezzle: take from treasury reserve if it has coins and bot doesn't have Duke (or willing to bluff)
-      if (game.treasuryReserve >= 3) {
+      if (game.treasuryReserve >= 2) {
         const hasDukeForEmbezzle = ownedCharacters.includes(Character.Duke);
+        const dukeRevealedCount = revealed.get(Character.Duke) || 0;
         if (!hasDukeForEmbezzle) {
-          // Truthful embezzle — safe if not challenged
-          candidates.push({ action: ActionType.Embezzle, weight: game.treasuryReserve >= 5 ? 4 : 2 });
-        } else if (Math.random() < personality.bluffRateTax * 0.5) {
-          // Bluff embezzle (claim no Duke but actually have it) — risky
-          candidates.push({ action: ActionType.Embezzle, weight: 0.5 * bluffMod });
+          // Truthful embezzle — safe if not challenged. Scale weight with reserve size
+          const reserveWeight = game.treasuryReserve >= 6 ? 6 : game.treasuryReserve >= 4 ? 4 : 2;
+          candidates.push({ action: ActionType.Embezzle, weight: reserveWeight });
+        } else if (!burnt.has(Character.Duke) && dukeRevealedCount < CARDS_PER_CHARACTER
+            && Math.random() < personality.bluffRateTax * 0.4) {
+          // Bluff embezzle (claim no Duke but actually have it) — risky inverse bluff
+          const reserveMod = game.treasuryReserve >= 5 ? 1.5 : 1;
+          candidates.push({ action: ActionType.Embezzle, weight: 0.5 * bluffMod * reserveMod });
         }
       }
 
-      // Convert: consider when stuck with only same-faction targets
+      // Convert: strategic faction manipulation
       if (!game.allSameFaction()) {
         const factionTargets = alivePlayers.filter(p => p.id !== botId && p.faction !== bot.faction);
         if (factionTargets.length === 0 && bot.coins >= 1) {
           // No valid targets — must convert to unlock targeting
-          candidates.push({ action: ActionType.Convert, weight: 5 });
-        } else if (bot.coins >= 2 && Math.random() < 0.15) {
-          // Occasionally convert an opponent for strategic reasons
-          candidates.push({ action: ActionType.Convert, weight: 0.5 });
+          candidates.push({ action: ActionType.Convert, weight: 6 });
+        } else if (bot.coins >= 2) {
+          // Strategic convert: consider converting the coin leader to our faction (protects them from us but denies others)
+          const leader = [...alivePlayers].filter(p => p.id !== botId).sort((a, b) => b.coins - a.coins)[0];
+          if (leader && leader.faction !== bot.faction && leader.coins >= COUP_COST) {
+            // Convert the leader to our faction — they can't be targeted by same-faction allies
+            candidates.push({ action: ActionType.Convert, weight: 1.5 * personality.leaderBias });
+          }
+          // Convert an opponent to create faction imbalance (more same-faction = fewer targets for them)
+          const sameFactionCount = alivePlayers.filter(p => p.faction === bot.faction).length;
+          const oppFactionCount = alivePlayers.filter(p => p.faction !== bot.faction).length;
+          if (oppFactionCount > sameFactionCount + 1) {
+            // We're outnumbered in faction — convert someone to balance
+            candidates.push({ action: ActionType.Convert, weight: 1.0 });
+          }
+          // Small baseline chance for strategic conversion
+          if (Math.random() < 0.1) {
+            candidates.push({ action: ActionType.Convert, weight: 0.3 });
+          }
         }
       }
 
-      // Examine (Inquisitor only)
+      // Examine (Inquisitor — truthful or bluff)
+      const inquisitorRevealed = revealed.get(Character.Inquisitor) || 0;
       if (hasInquisitor) {
         const examineTarget = this.pickTarget(game, botId, personality);
         if (examineTarget) {
-          candidates.push({ action: ActionType.Examine, targetId: examineTarget, weight: aliveCount > 2 ? 3 : 1.5 });
+          candidates.push({ action: ActionType.Examine, targetId: examineTarget, weight: aliveCount > 2 ? 3.5 : 1.5 });
+        }
+      } else if (aliveCount > 2 && inquisitorRevealed < CARDS_PER_CHARACTER
+          && !burnt.has(Character.Inquisitor) && Math.random() < personality.bluffRateExchange) {
+        // Bluff Examine — uses same bluff rate as Exchange (both claim Inquisitor/Ambassador)
+        const examineTarget = this.pickTarget(game, botId, personality);
+        if (examineTarget) {
+          let weight = 1.0;
+          if (established === Character.Inquisitor) weight *= persistBoost;
+          else weight *= switchPenalty;
+          candidates.push({ action: ActionType.Examine, targetId: examineTarget, weight: weight * bluffMod });
         }
       }
     }
@@ -701,6 +731,11 @@ export class BotBrain {
     const bot = game.getPlayer(botId)!;
     const claimedChar = pendingAction.claimedCharacter;
     if (!claimedChar) return { type: 'pass_challenge' };
+
+    // Embezzle uses inverse challenge: challenge succeeds if actor HAS Duke
+    if (pendingAction.type === ActionType.Embezzle) {
+      return this.decideEmbezzleChallenge(game, botId, personality, pendingAction, deckMemory);
+    }
 
     // If bot can block this action with a card it holds, prefer passing to block
     const def = ACTION_DEFINITIONS[pendingAction.type];
@@ -774,6 +809,56 @@ export class BotBrain {
     if (bot.aliveInfluenceCount === 1 && pendingAction.targetId !== botId) {
       challengeProb *= 0.5;
     }
+
+    return Math.random() < challengeProb ? { type: 'challenge' } : { type: 'pass_challenge' };
+  }
+
+  // ─── Embezzle Challenge (Inverse) ───
+
+  /**
+   * Inverse challenge for Embezzle: challenge succeeds if actor HAS Duke.
+   * Bot should challenge when it believes the actor likely holds Duke.
+   */
+  private static decideEmbezzleChallenge(
+    game: Game,
+    botId: string,
+    personality: PersonalityParams,
+    pendingAction: PendingAction,
+    deckMemory?: Map<Character, number>,
+  ): BotDecision {
+    const bot = game.getPlayer(botId)!;
+    const revealed = this.countRevealedCharacters(game);
+    const dukeRevealed = revealed.get(Character.Duke) || 0;
+    const botHoldsDuke = bot.hiddenCharacters.filter(c => c === Character.Duke).length;
+    const knownInDeck = deckMemory?.get(Character.Duke) || 0;
+    const accountedFor = dukeRevealed + botHoldsDuke + knownInDeck;
+
+    // If all Dukes are accounted for (revealed + held + in deck), actor can't have one — don't challenge
+    if (accountedFor >= CARDS_PER_CHARACTER) return { type: 'pass_challenge' };
+
+    // Check if actor has demonstrated having Duke before
+    const demonstrated = this.getDemonstratedCharacters(game, botId);
+    const actorDemo = demonstrated.get(pendingAction.actorId);
+    if (actorDemo?.has(Character.Duke)) {
+      // Strong evidence actor has Duke — challenge the inverse claim
+      if (Math.random() < 0.75) return { type: 'challenge' };
+    }
+
+    // Large reserve makes embezzle very impactful — more incentive to challenge
+    const reserveUrgency = game.treasuryReserve >= 5 ? 1.5 : 1.0;
+
+    // Base challenge rate scaled by personality
+    let challengeProb = personality.challengeRateBase * reserveUrgency;
+
+    // If bot holds Duke(s), fewer remaining for the actor — less likely they have it
+    if (botHoldsDuke > 0) challengeProb *= 0.5;
+
+    // More Dukes unaccounted for = more likely actor has one
+    const unaccounted = CARDS_PER_CHARACTER - accountedFor;
+    if (unaccounted >= 2) challengeProb *= 1.3;
+
+    // Caution at 1 influence
+    if (bot.aliveInfluenceCount === 1) challengeProb *= 0.6;
 
     return Math.random() < challengeProb ? { type: 'challenge' } : { type: 'pass_challenge' };
   }
@@ -937,9 +1022,40 @@ export class BotBrain {
     game: Game, botId: string, personality: PersonalityParams, examineState: ExamineState,
   ): BotDecision {
     const revealedCard = examineState.revealedCard;
-    // Force swap if the card is strong (Captain, Duke — cards that are threatening to the bot)
-    const strongCards = [Character.Captain, Character.Duke, Character.Assassin];
-    const forceSwap = strongCards.includes(revealedCard);
+    const bot = game.getPlayer(botId)!;
+    const targetId = examineState.targetId;
+    const target = game.getPlayer(targetId);
+
+    // Use dynamic card value to assess threat — higher value = more threatening to leave
+    const cardValue = this.dynamicCardValueWithSpread(revealedCard, game, botId, personality.cardValueSpread);
+
+    // Base threshold: force swap cards valued above 4 (strong cards)
+    let forceSwap = cardValue >= 4;
+
+    // If the target is the coin leader and has a strong card, more likely to force swap
+    if (target) {
+      const alivePlayers = game.getAlivePlayers();
+      const maxCoins = Math.max(...alivePlayers.filter(p => p.id !== botId).map(p => p.coins));
+      if (target.coins === maxCoins && target.coins >= COUP_COST - 2) {
+        forceSwap = cardValue >= 3; // Lower threshold for leaders
+      }
+    }
+
+    // If the card is Contessa and bot has Assassin, force swap to remove their defense
+    if (revealedCard === Character.Contessa && bot.hiddenCharacters.includes(Character.Assassin)) {
+      forceSwap = true;
+    }
+
+    // Aggressive personalities force swap more often
+    if (personality.actionWeightAssassinate > 1.3 && cardValue >= 3) {
+      forceSwap = true;
+    }
+
+    // Conservative personalities only swap truly threatening cards
+    if (personality.actionWeightIncome > 0.8 && personality.actionWeightAssassinate < 1.1) {
+      forceSwap = cardValue >= 5;
+    }
+
     return { type: 'examine_decision', forceSwap };
   }
 }
