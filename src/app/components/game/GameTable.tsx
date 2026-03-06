@@ -38,6 +38,7 @@ export function GameTable({ gameState, chatMessages, onSendChat, onSendReaction,
   useSoundEffects();
   const isMuted = useGameStore(s => s.isMuted);
   const setMuted = useGameStore(s => s.setMuted);
+  const reconnecting = useGameStore(s => s.reconnecting);
   const [showRules, setShowRules] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const me = gameState.players.find(p => p.id === gameState.myId);
@@ -89,6 +90,13 @@ export function GameTable({ gameState, chatMessages, onSendChat, onSendReaction,
           </button>
         </div>
       </div>
+
+      {/* Reconnecting banner */}
+      {reconnecting && (
+        <div className="bg-yellow-900/80 border border-yellow-600 text-yellow-200 text-xs text-center py-1.5 px-3 rounded-lg mb-2 animate-pulse">
+          Reconnecting to server...
+        </div>
+      )}
 
       {/* Phase status banner */}
       <div className="mb-3">
