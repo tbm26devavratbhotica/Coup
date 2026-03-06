@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChatMessage, ClientGameState, GameMode } from '@/shared/types';
+import { ChatMessage, ClientGameState } from '@/shared/types';
 import { PlayerSeat } from './PlayerSeat';
 import { CardFace } from './CardFace';
 import { CoinIcon } from '../icons';
@@ -58,11 +58,6 @@ export function GameTable({ gameState, chatMessages, onSendChat, onSendReaction,
         <span>Room: <span className="text-gray-400 font-mono">{gameState.roomCode}</span></span>
         <span>Turn {gameState.turnNumber}</span>
         <div className="flex items-center gap-2.5">
-          {gameState.gameMode === GameMode.Reformation && (
-            <span className={`font-mono ${gameState.treasuryReserve > 0 ? 'text-coup-gold' : 'text-gray-600'}`}>
-              Reserve: {gameState.treasuryReserve}
-            </span>
-          )}
           <span>Deck: {gameState.deckCount}</span>
           <button
             onClick={() => { haptic(); setMuted(!isMuted); }}

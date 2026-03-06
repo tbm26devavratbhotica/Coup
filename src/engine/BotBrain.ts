@@ -1056,6 +1056,12 @@ export class BotBrain {
       forceSwap = true;
     }
 
+    // In 1v1, Assassin is an immediate kill threat — always force swap if they can afford it
+    if (revealedCard === Character.Assassin && target && game.getAlivePlayers().length === 2
+        && target.coins >= ASSASSINATE_COST) {
+      forceSwap = true;
+    }
+
     return { type: 'examine_decision', forceSwap };
   }
 }

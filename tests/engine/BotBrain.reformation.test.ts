@@ -467,6 +467,27 @@ describe('BotBrain — Reformation', () => {
       }
     });
 
+    it('force swaps Assassin in 1v1 when opponent can afford assassination', () => {
+      const game = createReformationGame(2);
+      game.turnPhase = TurnPhase.AwaitingExamineDecision;
+      setCards(game, 'p2', [Character.Inquisitor, Character.Duke]);
+      game.getPlayer('p1')!.coins = 4; // Can afford Assassinate (cost 3)
+
+      const examineState: ExamineState = {
+        examinerId: 'p2',
+        targetId: 'p1',
+        revealedCard: Character.Assassin,
+        influenceIndex: 0,
+      };
+
+      const result = decide(game, 'p2', BOT_PERSONALITIES.optimal, { examineState });
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('examine_decision');
+      if (result!.type === 'examine_decision') {
+        expect(result!.forceSwap).toBe(true);
+      }
+    });
+
     it('aggressive personality force swaps more often than conservative', () => {
       const game = createReformationGame();
       game.turnPhase = TurnPhase.AwaitingExamineDecision;
