@@ -123,11 +123,12 @@ export function CardFace({ influence, size = 'md', onClick, selected, disablePre
         <div className={`card-flip-wrapper ${sizeClass}`}>
           <div
             title={influence.character}
-            className={`card-face ${sizeClass} ${characterColors[influence.character]} card-face-revealed
-              ${canPreview ? 'cursor-pointer' : ''} ${flipClass}`}
-            onClick={canPreview ? () => setShowPreview(true) : undefined}
+            className={`card-face ${sizeClass} ${characterColors[influence.character]} card-face-revealed flex flex-col items-center justify-center gap-1
+              ${canPreview? 'cursor-pointer' : ''} ${flipClass}`}
+            onClick={canPreview? () => setShowPreview(true) : undefined}
           >
             <Icon size={iconPx} />
+            <span className="text-[10px] font-bold text-white uppercase tracking-wider leading-none">{influence.character}</span>
           </div>
           {/* Back face shown during first half of flip animation */}
           {flipping && flipFront === 'face' && (
@@ -148,13 +149,14 @@ export function CardFace({ influence, size = 'md', onClick, selected, disablePre
         <div className={`card-flip-wrapper ${sizeClass}`}>
           <div
             title={influence.character}
-            className={`card-face ${sizeClass} ${characterColors[influence.character]}
-              ${onClick ? 'cursor-pointer hover:scale-105' : ''}
-              ${canPreview ? 'cursor-pointer hover:scale-105' : ''}
-              ${selected ? 'ring-2 ring-coup-accent scale-105' : ''} ${flipClass}`}
-            onClick={onClick ?? (canPreview ? () => setShowPreview(true) : undefined)}
+            className={`card-face ${sizeClass} ${characterColors[influence.character]} flex flex-col items-center justify-center gap-1
+              ${onClick? 'cursor-pointer hover:scale-105' : ''}
+              ${canPreview? 'cursor-pointer hover:scale-105' : ''}
+              ${selected? 'ring-2 ring-coup-accent scale-105' : ''} ${flipClass}`}
+            onClick={onClick?? (canPreview? () => setShowPreview(true) : undefined)}
           >
             <Icon size={iconPx} />
+            <span className="text-[10px] font-bold text-white uppercase tracking-wider leading-none">{influence.character}</span>
           </div>
           {/* Card back shown during first half when flipping from back→face */}
           {flipping && flipFront === 'back' && (
