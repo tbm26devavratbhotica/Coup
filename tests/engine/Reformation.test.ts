@@ -193,23 +193,26 @@ describe('Reformation Expansion', () => {
 
   describe('Inquisitor / Deck Configuration', () => {
     it('uses Inquisitor instead of Ambassador in Reformation with useInquisitor', () => {
+      // With 4 players (8 cards dealt) and 3 Inquisitor cards in deck,
+      // drawing enough cards should find Inquisitor but never Ambassador
       const engine = createReformationEngine(4, true);
-      const deckState = engine.game.deck;
-      // Deck should contain Inquisitor cards, not Ambassador
-      const allCards = [
-        ...engine.game.players.flatMap(p => p.influences.map(i => i.character)),
-        ...deckState.cards,
-      ];
+      const playerCards = engine.game.players.flatMap(p => p.influences.map(i => i.character));
+      // Draw remaining deck cards
+      const drawnCards: Character[] = [];
+      let card = engine.game.deck.draw();
+      while (card) { drawnCards.push(card); card = engine.game.deck.draw(); }
+      const allCards = [...playerCards, ...drawnCards];
       expect(allCards).toContain(Character.Inquisitor);
       expect(allCards).not.toContain(Character.Ambassador);
     });
 
     it('uses Ambassador when useInquisitor is false', () => {
       const engine = createReformationEngine(4, false);
-      const allCards = [
-        ...engine.game.players.flatMap(p => p.influences.map(i => i.character)),
-        ...engine.game.deck.cards,
-      ];
+      const playerCards = engine.game.players.flatMap(p => p.influences.map(i => i.character));
+      const drawnCards: Character[] = [];
+      let card = engine.game.deck.draw();
+      while (card) { drawnCards.push(card); card = engine.game.deck.draw(); }
+      const allCards = [...playerCards, ...drawnCards];
       expect(allCards).toContain(Character.Ambassador);
       expect(allCards).not.toContain(Character.Inquisitor);
     });
