@@ -157,16 +157,14 @@ export function Tutorial({ open, onClose }: TutorialProps) {
       </div>
 
       {/* Navigation */}
-      <div className="px-6 pb-6 pt-2 flex gap-3 max-w-sm mx-auto w-full">
-        {step > 0 ? (
+      <div className="px-6 pb-6 pt-2 flex justify-center gap-3 max-w-sm mx-auto w-full">
+        {step > 0 && (
           <button className="btn-secondary flex-1" onClick={prev}>
             Back
           </button>
-        ) : (
-          <div className="flex-1" />
         )}
         {step < TOTAL_STEPS - 1 ? (
-          <button className="btn-primary flex-1" onClick={next}>
+          <button className={`btn-primary ${step === 0 ? 'w-full' : 'flex-1'}`} onClick={next}>
             {step === 0 ? "Let's Go" : 'Next'}
           </button>
         ) : (
