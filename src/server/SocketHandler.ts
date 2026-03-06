@@ -581,6 +581,57 @@ export class SocketHandler {
       if (error) socket.emit('game:error', { message: error });
     });
 
+    // ─── Reformation expansion actions ───
+
+    socket.on('game:convert', (data) => {
+      if (!this.checkRateLimit(socket.id, 'game:action', RATE_LIMIT_GAME_ACTION_MS)) {
+        socket.emit('game:error', { message: 'Too many requests, please wait' });
+        return;
+      }
+
+      const ctx = this.getGameContext(socket);
+      if (!ctx) return;
+
+      if (data.targetId !== undefined && typeof data.targetId !== 'string') {
+        socket.emit('game:error', { message: 'Invalid target' });
+        return;
+      }
+
+      const error = ctx.engine.handleConvert(ctx.player.id, data.targetId);
+      if (error) socket.emit('game:error', { message: error });
+    });
+
+    socket.on('game:embezzle', () => {
+      if (!this.checkRateLimit(socket.id, 'game:action', RATE_LIMIT_GAME_ACTION_MS)) {
+        socket.emit('game:error', { message: 'Too many requests, please wait' });
+        return;
+      }
+
+      const ctx = this.getGameContext(socket);
+      if (!ctx) return;
+
+      const error = ctx.engine.handleEmbezzle(ctx.player.id);
+      if (error) socket.emit('game:error', { message: error });
+    });
+
+    socket.on('game:examine_decision', (data) => {
+      if (!this.checkRateLimit(socket.id, 'game:action', RATE_LIMIT_GAME_ACTION_MS)) {
+        socket.emit('game:error', { message: 'Too many requests, please wait' });
+        return;
+      }
+
+      const ctx = this.getGameContext(socket);
+      if (!ctx) return;
+
+      if (typeof data.forceSwap !== 'boolean') {
+        socket.emit('game:error', { message: 'Invalid examine decision' });
+        return;
+      }
+
+      const error = ctx.engine.handleExamineDecision(ctx.player.id, data.forceSwap);
+      if (error) socket.emit('game:error', { message: error });
+    });
+
     socket.on('disconnect', () => {
       this.untrackConnection(socket);
       this.socketRateLimits.delete(socket.id);

@@ -13,6 +13,7 @@ const characterColors: Record<Character, string> = {
   [Character.Captain]: 'border-blue-500 bg-blue-900/40',
   [Character.Ambassador]: 'border-green-500 bg-green-900/40',
   [Character.Contessa]: 'border-red-500 bg-red-900/40',
+  [Character.Inquisitor]: 'border-teal-500 bg-teal-900/40',
 };
 
 const iconPixelSizes = { sm: 28, md: 36, lg: 48 } as const;

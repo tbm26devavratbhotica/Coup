@@ -16,6 +16,7 @@ const characterThemes: Record<Character, { bg: string; border: string; label: st
   [Character.Captain]: { bg: 'bg-blue-900/30', border: 'border-blue-500', label: 'text-blue-300' },
   [Character.Ambassador]: { bg: 'bg-green-900/30', border: 'border-green-500', label: 'text-green-300' },
   [Character.Contessa]: { bg: 'bg-red-900/30', border: 'border-red-500', label: 'text-red-300' },
+  [Character.Inquisitor]: { bg: 'bg-teal-900/30', border: 'border-teal-500', label: 'text-teal-300' },
 };
 
 interface HowToPlayProps {
