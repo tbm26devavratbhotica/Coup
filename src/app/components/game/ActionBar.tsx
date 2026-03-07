@@ -327,6 +327,7 @@ export function ActionBar({ gameState }: ActionBarProps) {
           className="bg-red-900/40 rounded-lg p-2 text-left border border-red-700 hover:border-red-500 cursor-pointer active:scale-[0.97] transition-all"
           onClick={() => {
             if (window.confirm("Are you sure you want to completely end the game?")) {
+              // @ts-ignore
               socket.emit('game:force_end');
             }
           }}
