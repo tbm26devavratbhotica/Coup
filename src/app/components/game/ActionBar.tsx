@@ -321,6 +321,23 @@ export function ActionBar({ gameState }: ActionBarProps) {
             </button>
           );
         })}
+{/* NEW END GAME BUTTON */}
+        <button
+          key="end-game"
+          className="bg-red-900/40 rounded-lg p-2 text-left border border-red-700 hover:border-red-500 cursor-pointer active:scale-[0.97] transition-all"
+          onClick={() => {
+            if (window.confirm("Are you sure you want to completely end the game?")) {
+              socket.emit('game:force_end');
+            }
+          }}
+        >
+          <div className="flex items-start gap-2">
+            <div className="min-w-0">
+              <div className="font-bold text-sm text-red-200 leading-tight">End Game</div>
+              <div className="text-[10px] text-red-400 leading-tight mt-0.5">Forcefully stop the match</div>
+            </div>
+          </div>
+        </button>
       </div>
     </div>
   );
