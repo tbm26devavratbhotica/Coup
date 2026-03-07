@@ -470,7 +470,30 @@ export class SocketHandler {
         socket.emit('game:error', { message: 'Failed to start rematch' });
       }
     });
+// @ts-ignore
+    socket.on('game:force_end', () => {
+      try {
+        const found = this.roomManager.getPlayerRoom(socket.id);
+        if (!found) return;
 
+        if (found.player.id!== found.room.hostId) {
+          socket.emit('game:error', { message: 'Only the host can end the game' });
+          return;
+        }
+
+        console.log(`Game forcefully ended by host in room ${found.room.code}`);
+        const room = this.roomManager.resetToLobby(found.room.code);
+        if (!room) return;
+
+        this.io.to(room.code).emit('game:rematch_to_lobby');
+        this.broadcastRoomUpdate(room.code);
+        this.maybeBroadcastPublicRoomList(room);
+        this.broadcastServerStats();
+      } catch (err) {
+        console.error('Error in game:force_end handler:', err);
+        socket.emit('game:error', { message: 'Failed to force end game' });
+      }
+    });
     // ─── Game Actions ───
 
     socket.on('game:action', (data) => {
