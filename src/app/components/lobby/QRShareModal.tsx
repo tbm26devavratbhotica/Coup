@@ -14,7 +14,7 @@ interface QRShareModalProps {
 export function QRShareModal({ open, onClose, roomCode }: QRShareModalProps) {
   const [copied, setCopied] = useState(false);
 
-  const url = `https://coup.chuds.dev/lobby/${roomCode}`;
+const url = `https://coup-ruf9.onrender.com/lobby/${roomCode}`;
 
   const handleCopyLink = () => {
     haptic();
